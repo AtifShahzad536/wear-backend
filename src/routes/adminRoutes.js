@@ -6,7 +6,7 @@ import { HomeSettings } from '../models/Home.js';
 import { Inquiry } from '../models/Inquiry.js';
 import fs from 'fs';
 import path from 'path';
-import { sendMail, getTransporter, isMailConfigured } from '../config/mail.js';
+import { sendMail, isMailConfigured } from '../config/mail.js';
 
 const router = Router();
 
@@ -217,12 +217,10 @@ router.delete('/inquiries/:id', async (req, res) => {
 router.get('/mail-test', async (req, res) => {
   try {
     if (!isMailConfigured()) {
-      return res.status(400).json({ ok: false, error: 'Mail not configured. Check SMTP_* in .env' });
+      return res.status(400).json({ ok: false, error: 'Mail not configured. Check RESEND_* in .env' });
     }
-    const t = getTransporter();
-    await t.verify();
     await sendMail({ subject: 'WearConnect Mail Test', text: 'This is a test email from WearConnect.', html: '<b>This is a test email from WearConnect.</b>' });
-    res.json({ ok: true, message: 'Transport verified and test email attempted. Check inbox/spam.' });
+    res.json({ ok: true, message: 'Test email requested. Check inbox/spam.' });
   } catch (err) {
     res.status(500).json({ ok: false, error: err?.message || String(err) });
   }

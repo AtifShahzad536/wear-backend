@@ -1,59 +1,80 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 const {
-  SMTP_HOST = '',
-  SMTP_PORT = '587',
-  SMTP_SECURE = 'false',
-  SMTP_USER = '',
-  SMTP_PASS = '',
-  SMTP_FROM = '',
-  SMTP_TO = '',
+  RESEND_API_KEY = '',
+  RESEND_FROM = '',
+  RESEND_TO = '',
 } = process.env;
 
-let transporter = null;
+let client = null;
 
-export function getTransporter() {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: Number(SMTP_PORT),
-      secure: String(SMTP_SECURE).toLowerCase() === 'true',
-      auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
-    });
-    // Optional: verify once, non-blocking
-    transporter.verify().then(() => {
-      console.log('[Mail] transporter verified');
-    }).catch(err => {
-      console.warn('[Mail] transporter verify failed:', err?.message || err);
-    });
+function getClient() {
+  if (!client && RESEND_API_KEY) {
+    client = new Resend(RESEND_API_KEY);
   }
-  return transporter;
+  return client;
 }
 
 export function isMailConfigured() {
-  return Boolean(SMTP_HOST && (SMTP_USER || SMTP_FROM) && (SMTP_TO || SMTP_USER));
+  return Boolean(RESEND_API_KEY && RESEND_FROM && (RESEND_TO || RESEND_FROM));
 }
 
-// subject, text/html are required. replyTo is optional (e.g., end-user email)
-export async function sendMail({ subject, text, html, replyTo, attachments }) {
-  try {
-    if (!isMailConfigured()) {
-      console.warn('[Mail] not configured, skipping send');
-      return;
+async function normalizeAttachments(list = []) {
+  if (!Array.isArray(list) || !list.length) return [];
+  const attachments = await Promise.all(list.map(async (item) => {
+    const filePath = item?.path;
+    if (!filePath) return null;
+    try {
+      const fileBuffer = await fs.readFile(filePath);
+      return {
+        filename: item.filename || path.basename(filePath),
+        content: fileBuffer.toString('base64'),
+      };
+    } catch (err) {
+      console.warn('[Mail] attachment read failed:', err?.message || err);
+      return null;
     }
-    const t = getTransporter();
-    const from = SMTP_FROM || SMTP_USER;
-    // Support comma/semicolon separated list for SMTP_TO
-    const toList = (SMTP_TO || SMTP_USER)
+  }));
+  return attachments.filter(Boolean);
+}
+
+// subject is required. Provide html/text as needed. replyTo optional.
+export async function sendMail({ subject, text, html, replyTo, attachments }) {
+  if (!isMailConfigured()) {
+    console.warn('[Mail] not configured, skipping send');
+    return;
+  }
+
+  const resend = getClient();
+  if (!resend) {
+    console.error('[Mail] Resend client not initialized');
+    return;
+  }
+
+  try {
+    const toList = (RESEND_TO || RESEND_FROM)
       .split(/[,;]+/)
       .map(s => s.trim())
       .filter(Boolean);
-    const message = { from, to: toList, subject };
-    if (replyTo) message.replyTo = replyTo;
-    if (html) message.html = html;
-    if (text) message.text = text;
-    if (attachments && Array.isArray(attachments) && attachments.length) message.attachments = attachments;
-    await t.sendMail(message);
+
+    const payload = {
+      from: RESEND_FROM,
+      to: toList,
+      subject,
+    };
+
+    if (replyTo) payload.reply_to = replyTo;
+    if (html) payload.html = html;
+    if (text) payload.text = text;
+
+    const normalizedAttachments = await normalizeAttachments(attachments);
+    if (normalizedAttachments.length) {
+      payload.attachments = normalizedAttachments;
+    }
+
+    await resend.emails.send(payload);
   } catch (err) {
     console.error('[Mail] send failed:', err?.message || err);
   }

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Category • WearConnect</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div class="min-h-screen grid grid-cols-12">
+    <aside class="col-span-12 md:col-span-3 lg:col-span-2 bg-white border-r p-4 space-y-2">
+      <h1 class="text-xl font-bold text-indigo-600">WearConnect Admin</h1>
+      <nav class="mt-4 space-y-1">
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin">Dashboard</a>
+        <a class="block px-3 py-2 rounded bg-gray-100" href="/admin/categories">Categories</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/uploads">Uploads</a>
+      </nav>
+    </aside>
+    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-semibold">New Category</h2>
+        <a href="/admin/categories" class="px-3 py-2 border rounded">Back</a>
+      </div>
+
+      <form action="/api/admin/categories" method="post" class="bg-white border rounded-lg p-5 space-y-4 max-w-xl">
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Slug</label>
+          <input required name="slug" class="w-full border rounded px-3 py-2" placeholder="e.g. football" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Name</label>
+          <input required name="name" class="w-full border rounded px-3 py-2" placeholder="e.g. Football Kits & Apparel" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Gradient From</label>
+            <input name="gradientFrom" class="w-full border rounded px-3 py-2" placeholder="from-indigo-600" />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Gradient To</label>
+            <input name="gradientTo" class="w-full border rounded px-3 py-2" placeholder="to-indigo-400" />
+          </div>
+        </div>
+        <button class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Create</button>
+      </form>
+    </main>
+  </div>
+</body>
+</html>
+
+<script>
+  (function(){
+    var IDLE_MS = 1 * 60 * 1000; // 1 minute (test)
+    var t;
+    function clearAuth(){ try { document.cookie = 'token=; Max-Age=0; path=/'; } catch(e){} }
+    function logout(){ clearAuth(); window.location.replace('/admin/login?idle=1'); }
+    function reset(){ if (t) clearTimeout(t); t = setTimeout(logout, IDLE_MS); }
+    ['mousemove','keydown','click','touchstart','scroll','visibilitychange'].forEach(function(ev){
+      window.addEventListener(ev, reset, { passive: true });
+    });
+    reset();
+  })();
+</script>

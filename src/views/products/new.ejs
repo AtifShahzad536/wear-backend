@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Product • <%= category.name %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div class="min-h-screen grid grid-cols-12">
+    <aside class="col-span-12 md:col-span-3 lg:col-span-2 bg-white border-r p-4 space-y-2">
+      <h1 class="text-xl font-bold text-indigo-600">WearConnect Admin</h1>
+      <nav class="mt-4 space-y-1">
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin">Dashboard</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/categories">Categories</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/uploads">Uploads</a>
+      </nav>
+    </aside>
+    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-semibold">New Product • <%= category.name %></h2>
+          <div class="text-sm text-gray-500">Slug: <code><%= category.slug %></code></div>
+        </div>
+        <a href="/admin/categories/<%= category.slug %>/products" class="px-3 py-2 border rounded">Back</a>
+      </div>
+
+      <!-- Toast -->
+      <div id="toast" class="fixed top-4 right-4 hidden px-4 py-3 rounded-md text-white shadow-lg z-50"></div>
+      
+      <form id="product-form" action="/api/admin/categories/<%= category.slug %>/products" method="post" class="bg-white border rounded-lg p-5 space-y-4 max-w-xl">
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">ID</label>
+          <input required name="id" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500" placeholder="e.g. fb-9" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Name</label>
+          <input required name="name" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500" placeholder="Product name" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Image</label>
+          <div class="flex gap-2">
+            <input id="image" name="image" class="flex-1 border rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500" placeholder="/uploads/yourfile.jpg" />
+            <input id="file" type="file" class="hidden" />
+            <button id="uploadBtn" type="button" class="px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Upload</button>
+          </div>
+          <div class="text-xs text-gray-500 mt-1">Choose a file to upload; the URL fills automatically.</div>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Description</label>
+          <textarea name="description" rows="4" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500" placeholder="Short description"></textarea>
+        </div>
+        <button class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Create</button>
+      </form>
+    </main>
+  </div>
+
+  <script>
+    const toast = (msg, type='success') => {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `fixed top-4 right-4 px-4 py-3 rounded-md text-white shadow-lg z-50 ${type==='success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+      el.style.opacity = 0;
+      el.style.display = 'block';
+      el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
+      setTimeout(() => {
+        el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200 });
+        setTimeout(()=>{ el.style.display='none'; }, 200);
+      }, 1500);
+    };
+
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('file');
+    const imageInput = document.getElementById('image');
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async () => {
+      if (!fileInput.files.length) return;
+      const fd = new FormData();
+      fd.append('file', fileInput.files[0]);
+      try {
+        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload failed');
+        imageInput.value = data.url;
+        toast('Image uploaded');
+      } catch (e) {
+        toast(e.message || 'Upload failed', 'error');
+      }
+    });
+
+    const form = document.getElementById('product-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      // Normalize image path: if user typed a bare filename, store under /uploads/
+      const imgEl = document.getElementById('image');
+      if (imgEl && imgEl.value) {
+        let v = imgEl.value.trim().replace(/\\/g,'/');
+        if (v && v[0] !== '/') v = '/' + v;
+        if (!v.startsWith('/uploads/') && !v.startsWith('/images/') && v.split('/').length === 2) {
+          // looks like "/filename.ext" -> prefix /uploads
+          v = v.replace(/^\//, '/uploads/');
+        }
+        imgEl.value = v;
+      }
+      const fd = new FormData(form);
+      const res = await fetch(form.action, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (res.ok) {
+        toast('Product created');
+        setTimeout(()=>{ window.location.href = `/admin/categories/<%= category.slug %>/products`; }, 600);
+      } else {
+        toast(data.error || 'Save failed', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

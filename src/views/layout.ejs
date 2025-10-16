@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title || 'Admin' %> • WearConnect</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div class="min-h-screen grid grid-cols-12">
+    <!-- Sidebar -->
+    <aside class="col-span-12 md:col-span-3 lg:col-span-2 bg-white border-r p-4 space-y-2">
+      <h1 class="text-xl font-bold text-indigo-600">WearConnect Admin</h1>
+      <nav class="mt-4 space-y-1">
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin">Dashboard</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/categories">Categories</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/uploads">Uploads</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/home/hero">Home • Hero Images</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/home/testimonials">Home • Testimonials</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/home/top-selling">Home • Top Selling</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/inquiries">Inquiries</a>
+      </nav>
+    </aside>
+    <!-- Main -->
+    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6">
+      <div class="mb-6">
+        <h2 class="text-2xl font-semibold"><%= title || '' %></h2>
+      </div>
+      <%- body %>
+    </main>
+  </div>
+</body>
+</html>
+
+<script>
+  (function(){
+    var IDLE_MS = 1 * 60 * 1000; // 1 minute (test)
+    var t;
+    function clearAuth(){ try { document.cookie = 'token=; Max-Age=0; path=/'; } catch(e){} }
+    function logout(){ clearAuth(); window.location.replace('/admin/login?idle=1'); }
+    function reset(){ if (t) clearTimeout(t); t = setTimeout(logout, IDLE_MS); }
+    ['mousemove','keydown','click','touchstart','scroll','visibilitychange'].forEach(function(ev){
+      window.addEventListener(ev, reset, { passive: true });
+    });
+    reset();
+  })();
+  </script>

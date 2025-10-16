@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div class="min-h-screen grid grid-cols-12">
+    <aside class="col-span-12 md:col-span-3 lg:col-span-2 bg-white border-r p-4 space-y-2">
+      <h1 class="text-xl font-bold text-indigo-600">WearConnect Admin</h1>
+      <nav class="mt-4 space-y-1 text-sm">
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin">Dashboard</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/categories">Categories</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/uploads">Uploads</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/home/hero">Home • Hero Images</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/home/testimonials">Home • Testimonials</a>
+        <a class="block px-3 py-2 rounded bg-indigo-50 text-indigo-700" href="/admin/home/top-selling">Home • Top Selling</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/inquiries">Inquiries</a>
+      </nav>
+    </aside>
+    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-semibold">Home • Top Selling</h2>
+          <p class="text-gray-500 text-sm">Manage Top Selling items shown on the homepage.</p>
+        </div>
+        <button id="tsAdd" class="px-3 py-2 border rounded">+ Add item</button>
+      </div>
+
+      <div id="toast" class="fixed top-4 right-4 hidden px-4 py-3 rounded-md text-white shadow-lg z-50"></div>
+
+      <section class="mb-8">
+        <div id="tsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+
+      <div>
+        <button id="saveBtn" class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800">Save Changes</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API = '/api/admin';
+    const toast = (msg, type='success') => {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `fixed top-4 right-4 px-4 py-3 rounded-md text-white shadow-lg z-50 ${type==='success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+      el.style.opacity = 0; el.style.display = 'block';
+      el.animate([{opacity:0},{opacity:1}],{duration:200});
+      setTimeout(()=>{ el.animate([{opacity:1},{opacity:0}],{duration:200}); setTimeout(()=>{ el.style.display='none'; },200); },1200);
+    };
+
+    const tsGrid = document.getElementById('tsGrid');
+
+    let heroImages = []; let testimonials = []; let topSelling = [];
+
+    function render() {
+      tsGrid.innerHTML = topSelling.map((t,i)=>`
+        <div class="rounded-xl ring-1 ring-gray-200 bg-white p-4 shadow-sm space-y-2">
+          <input data-i="${i}" data-k="name" class="border rounded px-2 py-1 w-full" placeholder="Name" value="${t.name||''}" />
+          <input data-i="${i}" data-k="image" class="border rounded px-2 py-1 w-full" placeholder="Image URL (/uploads/...)" value="${t.image||''}" />
+          <input data-i="${i}" data-k="link" class="border rounded px-2 py-1 w-full" placeholder="Link (/football or https://...)" value="${t.link||''}" />
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-gray-500">Preview:</div>
+            <div class="flex gap-2">
+              <button data-i="${i}" data-type="ts-upload" class="px-2 py-1 text-xs border rounded">Upload Image</button>
+              <button data-i="${i}" data-type="ts-del" class="px-2 py-1 text-xs border rounded">Remove</button>
+            </div>
+          </div>
+          ${t.image ? `<img src="${t.image}" class="w-full h-32 object-cover rounded-md" />` : ''}
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('tsAdd').addEventListener('click', ()=>{
+      topSelling.push({ name:'', image:'', link:'' }); render();
+    });
+
+    tsGrid.addEventListener('input', (e)=>{
+      const i = +e.target.dataset.i; const k = e.target.dataset.k; if (Number.isNaN(i) || !k) return;
+      topSelling[i][k] = e.target.value;
+    });
+
+    const tsHidden = document.createElement('input'); tsHidden.type='file'; tsHidden.accept='image/*'; tsHidden.className='hidden'; document.body.appendChild(tsHidden);
+    let tsUploadIndex = -1;
+    tsGrid.addEventListener('click', (e)=>{
+      if (e.target.dataset.type === 'ts-del') { const i = +e.target.dataset.i; topSelling.splice(i,1); render(); return; }
+      if (e.target.dataset.type === 'ts-upload') { tsUploadIndex = +e.target.dataset.i; tsHidden.click(); }
+    });
+    tsHidden.addEventListener('change', async ()=>{
+      if (tsUploadIndex < 0 || !tsHidden.files.length) return;
+      const fd = new FormData(); fd.append('file', tsHidden.files[0]);
+      try {
+        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error||'Upload failed');
+        topSelling[tsUploadIndex].image = data.url; render(); toast('Image uploaded');
+      } catch (e) { toast(e.message||'Upload failed','error'); }
+      tsUploadIndex = -1; tsHidden.value='';
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', async ()=>{
+      try {
+        const res = await fetch(`${API}/home`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ heroImages, testimonials, topSelling })
+        });
+        const data = await res.json(); if (!res.ok) throw new Error(data.error||'Save failed');
+        toast('Saved');
+      } catch (e) { toast(e.message||'Save failed','error'); }
+    });
+
+    async function load() {
+      const homeRes = await fetch(`${API}/home`); const home = await homeRes.json();
+      heroImages = home.heroImages || []; testimonials = home.testimonials || []; topSelling = home.topSelling || []; render();
+    }
+    load();
+  </script>
+</body>
+</html>
+
+<script>
+  (function(){
+    var IDLE_MS = 1 * 60 * 1000; // 1 minute (test)
+    var t;
+    function clearAuth(){ try { document.cookie = 'token=; Max-Age=0; path=/'; } catch(e){} }
+    function logout(){ clearAuth(); window.location.replace('/admin/login?idle=1'); }
+    function reset(){ if (t) clearTimeout(t); t = setTimeout(logout, IDLE_MS); }
+    ['mousemove','keydown','click','touchstart','scroll','visibilitychange'].forEach(function(ev){
+      window.addEventListener(ev, reset, { passive: true });
+    });
+    reset();
+  })();
+</script>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div class="min-h-screen grid grid-cols-12">
+    <aside class="col-span-12 md:col-span-3 lg:col-span-2 bg-white border-r p-4 space-y-2">
+      <h1 class="text-xl font-bold text-indigo-600">WearConnect Admin</h1>
+      <nav class="mt-4 space-y-1 text-sm">
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin">Dashboard</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/categories">Categories</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/uploads">Uploads</a>
+        <a class="block px-3 py-2 rounded bg-indigo-50 text-indigo-700" href="/admin/home/settings">Home Settings</a>
+      </nav>
+    </aside>
+    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-semibold">Home Settings</h2>
+          <p class="text-gray-500 text-sm">Manage hero images, testimonials, and top selling shown on the homepage.</p>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div id="toast" class="fixed top-4 right-4 hidden px-4 py-3 rounded-md text-white shadow-lg z-50"></div>
+
+      <!-- Hero Images -->
+      <section class="mb-8">
+        <h3 class="text-lg font-semibold mb-3">Hero Images</h3>
+        <div id="heroGrid" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3"></div>
+        <div class="flex gap-2 mb-3 items-center">
+          <input id="heroInput" class="border rounded px-3 py-2 flex-1" placeholder="/uploads/your.jpg or https://..." />
+          <button id="heroAdd" class="px-3 py-2 border rounded">Add URL</button>
+          <input id="heroFile" type="file" accept="image/*" class="hidden" />
+          <button id="heroUpload" class="px-3 py-2 border rounded">Upload Image</button>
+        </div>
+        <div>
+          <h4 class="text-sm text-gray-500 mb-2">Pick from uploads</h4>
+          <div id="uploadsGrid" class="grid grid-cols-2 md:grid-cols-6 gap-2"></div>
+        </div>
+      </section>
+
+      <!-- Top Selling -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Top Selling</h3>
+          <button id="tsAdd" class="px-3 py-2 border rounded">+ Add item</button>
+        </div>
+        <div id="tsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </section>
+
+      <!-- Testimonials -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Testimonials</h3>
+          <button id="tAdd" class="px-3 py-2 border rounded">+ Add</button>
+        </div>
+        <div id="tGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </section>
+
+      <div>
+        <button id="saveBtn" class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800">Save Changes</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API = '/api/admin';
+    const toast = (msg, type='success') => {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `fixed top-4 right-4 px-4 py-3 rounded-md text-white shadow-lg z-50 ${type==='success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+      el.style.opacity = 0; el.style.display = 'block';
+      el.animate([{opacity:0},{opacity:1}],{duration:200});
+      setTimeout(()=>{ el.animate([{opacity:1},{opacity:0}],{duration:200}); setTimeout(()=>{ el.style.display='none'; },200); },1200);
+    };
+
+    const heroGrid = document.getElementById('heroGrid');
+    const uploadsGrid = document.getElementById('uploadsGrid');
+    const tGrid = document.getElementById('tGrid');
+    const heroInput = document.getElementById('heroInput');
+    const heroFile = document.getElementById('heroFile');
+    const heroUpload = document.getElementById('heroUpload');
+
+    let heroImages = [];
+    let testimonials = [];
+    let topSelling = [];
+
+    function render() {
+      // hero
+      heroGrid.innerHTML = heroImages.map((u,i)=>`
+        <div class="relative group border rounded overflow-hidden">
+          <img src="${u}" class="w-full h-32 object-cover"/>
+          <button data-i="${i}" data-type="hero-del" class="absolute top-2 right-2 px-2 py-1 text-xs bg-white/90 border rounded hidden group-hover:block">Remove</button>
+        </div>
+      `).join('');
+
+      // top selling
+      tsGrid.innerHTML = topSelling.map((t,i)=>`
+        <div class="border rounded p-3 space-y-2">
+          <input data-i="${i}" data-k="name" class="border rounded px-2 py-1 w-full" placeholder="Name" value="${t.name||''}" />
+          <input data-i="${i}" data-k="image" class="border rounded px-2 py-1 w-full" placeholder="Image URL (/uploads/...)" value="${t.image||''}" />
+          <input data-i="${i}" data-k="link" class="border rounded px-2 py-1 w-full" placeholder="Link (/football or https://...)" value="${t.link||''}" />
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-gray-500">Preview:</div>
+            <div class="flex gap-2">
+              <button data-i="${i}" data-type="ts-upload" class="px-2 py-1 text-xs border rounded">Upload Image</button>
+              <button data-i="${i}" data-type="ts-del" class="px-2 py-1 text-xs border rounded">Remove</button>
+            </div>
+          </div>
+          ${t.image ? `<img src="${t.image}" class="w-full h-24 object-cover rounded" />` : ''}
+        </div>
+      `).join('');
+      // testimonials
+      tGrid.innerHTML = testimonials.map((t,i)=>`
+        <div class="border rounded p-3 space-y-2">
+          <div class="flex gap-2">
+            <input data-i="${i}" data-k="name" class="border rounded px-2 py-1 flex-1" placeholder="Name" value="${t.name||''}" />
+            <input data-i="${i}" data-k="role" class="border rounded px-2 py-1 flex-1" placeholder="Role" value="${t.role||''}" />
+          </div>
+          <input data-i="${i}" data-k="image" class="border rounded px-2 py-1 w-full" placeholder="Image URL (/uploads/...)" value="${t.image||''}" />
+          <textarea data-i="${i}" data-k="quote" class="border rounded px-2 py-1 w-full" placeholder="Quote">${t.quote||''}</textarea>
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-gray-500">Preview:</div>
+            <div class="flex gap-2">
+              <button data-i="${i}" data-type="t-upload" class="px-2 py-1 text-xs border rounded">Upload Image</button>
+              <button data-i="${i}" data-type="t-del" class="px-2 py-1 text-xs border rounded">Remove</button>
+            </div>
+          </div>
+          ${t.image ? `<img src="${t.image}" class="w-full h-24 object-cover rounded" />` : ''}
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('heroAdd').addEventListener('click', ()=>{
+      const v = (heroInput.value||'').trim();
+      if (!v) return; heroImages = Array.from(new Set([ ...heroImages, v ])); heroInput.value=''; render();
+    });
+
+    // Top selling events
+    document.getElementById('tsAdd').addEventListener('click', ()=>{
+      topSelling.push({ name:'', image:'', link:'' }); render();
+    });
+    const tsGrid = document.getElementById('tsGrid');
+    tsGrid.addEventListener('input', (e)=>{
+      const i = +e.target.dataset.i; const k = e.target.dataset.k; if (Number.isNaN(i) || !k) return;
+      topSelling[i][k] = e.target.value;
+    });
+    const tsHidden = document.createElement('input'); tsHidden.type='file'; tsHidden.accept='image/*'; tsHidden.className='hidden'; document.body.appendChild(tsHidden);
+    let tsUploadIndex = -1;
+    tsGrid.addEventListener('click', (e)=>{
+      if (e.target.dataset.type === 'ts-del') { const i = +e.target.dataset.i; topSelling.splice(i,1); render(); return; }
+      if (e.target.dataset.type === 'ts-upload') { tsUploadIndex = +e.target.dataset.i; tsHidden.click(); }
+    });
+    tsHidden.addEventListener('change', async ()=>{
+      if (tsUploadIndex < 0 || !tsHidden.files.length) return;
+      const fd = new FormData(); fd.append('file', tsHidden.files[0]);
+      try {
+        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error||'Upload failed');
+        topSelling[tsUploadIndex].image = data.url; render(); toast('Image uploaded');
+      } catch (e) { toast(e.message||'Upload failed','error'); }
+      tsUploadIndex = -1; tsHidden.value='';
+    });
+
+    heroGrid.addEventListener('click', (e)=>{
+      if (e.target.dataset.type === 'hero-del') {
+        const i = +e.target.dataset.i; heroImages.splice(i,1); render();
+      }
+    });
+
+    // Hero upload via API
+    heroUpload.addEventListener('click', ()=> heroFile.click());
+    heroFile.addEventListener('change', async ()=>{
+      if (!heroFile.files.length) return;
+      const fd = new FormData(); fd.append('file', heroFile.files[0]);
+      try {
+        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error||'Upload failed');
+        heroImages = Array.from(new Set([ ...heroImages, data.url ]));
+        render(); toast('Image uploaded');
+      } catch (e) { toast(e.message||'Upload failed','error'); }
+      heroFile.value='';
+    });
+
+    document.getElementById('tAdd').addEventListener('click', ()=>{
+      testimonials.push({ name:'', role:'', image:'', quote:'' }); render();
+    });
+
+    tGrid.addEventListener('input', (e)=>{
+      const i = +e.target.dataset.i; const k = e.target.dataset.k; if (Number.isNaN(i) || !k) return;
+      testimonials[i][k] = e.target.value; 
+    });
+    // Testimonials: upload image per card using a shared hidden input
+    const tHidden = document.createElement('input'); tHidden.type='file'; tHidden.accept='image/*'; tHidden.className='hidden'; document.body.appendChild(tHidden);
+    let tUploadIndex = -1;
+    tGrid.addEventListener('click', (e)=>{
+      if (e.target.dataset.type === 't-del') { const i = +e.target.dataset.i; testimonials.splice(i,1); render(); return; }
+      if (e.target.dataset.type === 't-upload') { tUploadIndex = +e.target.dataset.i; tHidden.click(); }
+    });
+    tHidden.addEventListener('change', async ()=>{
+      if (tUploadIndex < 0 || !tHidden.files.length) return;
+      const fd = new FormData(); fd.append('file', tHidden.files[0]);
+      try {
+        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error||'Upload failed');
+        testimonials[tUploadIndex].image = data.url; render(); toast('Image uploaded');
+      } catch (e) { toast(e.message||'Upload failed','error'); }
+      tUploadIndex = -1; tHidden.value='';
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', async ()=>{
+      try {
+        const res = await fetch(`${API}/home`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ heroImages, testimonials, topSelling })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error||'Save failed');
+        toast('Saved');
+      } catch (e) { toast(e.message||'Save failed','error'); }
+    });
+
+    async function load() {
+      const homeRes = await fetch(`${API}/home`); const home = await homeRes.json();
+      heroImages = home.heroImages || []; testimonials = home.testimonials || []; topSelling = home.topSelling || []; render();
+      const upRes = await fetch(`${API}/uploads`); const files = await upRes.json();
+      uploadsGrid.innerHTML = files.map((f)=>`
+        <button data-url="${f.url}" class="border rounded p-1 hover:shadow">
+          <img src="${f.url}" class="w-full h-20 object-cover" />
+        </button>
+      `).join('');
+      uploadsGrid.addEventListener('click', (e)=>{
+        const btn = e.target.closest('button[data-url]'); if (!btn) return;
+        heroImages = Array.from(new Set([ ...heroImages, btn.dataset.url ])); render();
+      });
+    }
+    load();
+  </script>
+</body>
+</html>

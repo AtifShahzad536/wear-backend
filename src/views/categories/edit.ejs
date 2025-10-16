@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Category • WearConnect</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div class="min-h-screen grid grid-cols-12">
+    <aside class="col-span-12 md:col-span-3 lg:col-span-2 bg-white border-r p-4 space-y-2">
+      <h1 class="text-xl font-bold text-indigo-600">WearConnect Admin</h1>
+      <nav class="mt-4 space-y-1">
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin">Dashboard</a>
+        <a class="block px-3 py-2 rounded bg-gray-100" href="/admin/categories">Categories</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/uploads">Uploads</a>
+      </nav>
+    </aside>
+    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-semibold">Edit Category</h2>
+          <div class="text-sm text-gray-500">Slug: <code><%= category.slug %></code></div>
+        </div>
+        <div class="space-x-2">
+          <a href="/admin/categories" class="px-3 py-2 border rounded">Back</a>
+          <a href="/admin/categories/<%= category.slug %>/products" class="px-3 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded">Manage Products</a>
+          <form action="/api/admin/categories/<%= category.slug %>/delete" method="post" class="inline" onsubmit="return confirm('Delete category <%= category.name %>? This cannot be undone.')">
+            <button class="px-3 py-2 border border-red-300 text-red-700 rounded">Delete</button>
+          </form>
+        </div>
+      </div>
+      <form action="/api/admin/categories/<%= category.slug %>" method="post" class="bg-white border rounded-lg p-5 space-y-4 max-w-xl">
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Name</label>
+          <input name="name" value="<%= category.name %>" class="w-full border rounded px-3 py-2" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Featured Image</label>
+          <div class="flex gap-2">
+            <input id="featImage" name="featured.image" value="<%= (category.featured && category.featured.image) || '' %>" class="flex-1 border rounded px-3 py-2" placeholder="/uploads/yourfile.jpg" />
+            <input id="featFile" type="file" class="hidden" />
+            <button id="featUploadBtn" type="button" class="px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Upload</button>
+          </div>
+          <div class="text-xs text-gray-500 mt-1">Choose a file to upload; the URL fills automatically.</div>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Featured Description</label>
+          <textarea name="featured.description" rows="3" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500"><%= (category.featured && category.featured.description) || '' %></textarea>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Gradient From</label>
+          <input name="gradientFrom" value="<%= category.gradientFrom || '' %>" class="w-full border rounded px-3 py-2" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Gradient To</label>
+          <input name="gradientTo" value="<%= category.gradientTo || '' %>" class="w-full border rounded px-3 py-2" />
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Key Features</h3>
+          <template id="detail-template">
+            <div class="flex gap-2">
+              <input name="featured.details[]" class="flex-1 border rounded px-3 py-2" />
+              <button type="button" class="remove-detail px-2 py-1 text-xs border rounded">Remove</button>
+            </div>
+          </template>
+          <div id="details" class="space-y-2">
+            <% (((category.featured||{}).details)||[]).forEach(function(d){ %>
+              <div class="flex gap-2">
+                <input name="featured.details[]" value="<%= d %>" class="flex-1 border rounded px-3 py-2" />
+                <button type="button" class="remove-detail px-2 py-1 text-xs border rounded">Remove</button>
+              </div>
+            <% }); %>
+          </div>
+          <button id="add-detail" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">+ Add Feature</button>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Sizes</h3>
+          <template id="size-template">
+            <div class="flex gap-2">
+              <input name="featured.sizes[]" class="flex-1 border rounded px-3 py-2" />
+              <button type="button" class="remove-size px-2 py-1 text-xs border rounded">Remove</button>
+            </div>
+          </template>
+          <div id="sizes" class="space-y-2">
+            <% (((category.featured||{}).sizes)||[]).forEach(function(s){ %>
+              <div class="flex gap-2">
+                <input name="featured.sizes[]" value="<%= s %>" class="flex-1 border rounded px-3 py-2" />
+                <button type="button" class="remove-size px-2 py-1 text-xs border rounded">Remove</button>
+              </div>
+            <% }); %>
+          </div>
+          <button id="add-size" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">+ Add Size</button>
+        </div>
+        <button class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Save</button>
+      </form>
+    </main>
+  </div>
+  <div id="toast" class="fixed top-4 right-4 hidden px-4 py-3 rounded-md text-white shadow-lg z-50"></div>
+</body>
+</html>
+
+<script>
+  function addDetail(){}
+  function addSize(){}
+
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.classList.remove('hidden');
+    toast.innerText = message;
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 3000);
+  }
+
+  // Featured image upload
+  const featBtn = document.getElementById('featUploadBtn');
+  const featFile = document.getElementById('featFile');
+  const featInput = document.getElementById('featImage');
+  if (featBtn && featFile && featInput) {
+    featBtn.addEventListener('click', ()=>featFile.click());
+    featFile.addEventListener('change', async ()=>{
+      if (!featFile.files.length) return;
+      const fd = new FormData(); fd.append('file', featFile.files[0]);
+      try {
+        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error||'Upload failed');
+        featInput.value = data.url; showToast('Image uploaded');
+      } catch (e) { showToast(e.message||'Upload failed'); }
+      featFile.value='';
+    });
+  }
+
+  // Normalize image path before submit
+  const form = document.querySelector('form[action^="/api/admin/categories/"]');
+  if (form) {
+    form.addEventListener('submit', ()=>{
+      const el = document.getElementById('featImage');
+      if (el && el.value) {
+        let v = el.value.trim().replace(/\\/g,'/');
+        if (v && v[0] !== '/') v = '/' + v;
+        el.value = v;
+      }
+    });
+  }
+</script>

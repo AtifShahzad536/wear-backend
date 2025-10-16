@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div class="min-h-screen grid grid-cols-12">
+    <!-- Sidebar -->
+    <aside class="col-span-12 md:col-span-3 lg:col-span-2 bg-white border-r p-4 space-y-2">
+      <h1 class="text-xl font-bold text-indigo-600">WearConnect Admin</h1>
+      <nav class="mt-4 space-y-1 text-sm">
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin">Dashboard</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/categories">Categories</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/uploads">Uploads</a>
+        <a class="block px-3 py-2 rounded bg-indigo-50 text-indigo-700" href="/admin/inquiries">Inquiries</a>
+        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/home/settings">Home Settings</a>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-semibold">Inquiries</h2>
+          <p class="text-gray-500 text-sm">Custom and Contact submissions</p>
+        </div>
+        <div class="text-sm text-gray-500"><%= (inquiries||[]).length %> total</div>
+      </div>
+
+      <div id="toast" class="fixed top-4 right-4 hidden px-4 py-3 rounded-md text-white shadow-lg z-50"></div>
+
+      <div class="flex items-center gap-2 mb-4">
+        <button data-filter="all" class="flt px-3 py-1 border rounded bg-indigo-600 text-white">All</button>
+        <button data-filter="custom" class="flt px-3 py-1 border rounded">Custom</button>
+        <button data-filter="contact" class="flt px-3 py-1 border rounded">Contact</button>
+      </div>
+
+      <div id="cards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <% (inquiries || []).forEach(i => { %>
+          <div class="bg-white rounded-xl border shadow-sm hover:shadow-md transition p-4 space-y-2" data-type="<%= i.type %>">
+            <div class="flex items-center justify-between">
+              <div class="text-xs px-2 py-1 rounded-full <%= i.type==='custom' ? 'bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700' %>"><%= i.type %></div>
+              <div class="text-xs text-gray-500"><%= new Date(i.createdAt).toLocaleString() %></div>
+            </div>
+            <div class="text-sm"><span class="font-semibold">Name:</span> <%= i.name %></div>
+            <div class="text-sm"><span class="font-semibold">Email:</span> <%= i.email %></div>
+            <% if (i.phone) { %><div class="text-sm"><span class="font-semibold">Phone:</span> <%= i.phone %></div><% } %>
+            <% if (i.company) { %><div class="text-sm"><span class="font-semibold">Company:</span> <%= i.company %></div><% } %>
+            <% if (i.fileUrl) { %>
+              <div class="text-sm"><span class="font-semibold">File:</span> <a class="text-indigo-700 hover:underline" href="<%= i.fileUrl %>" target="_blank">Download</a></div>
+            <% } %>
+            <div class="text-sm text-gray-700 whitespace-pre-line border rounded p-2 bg-gray-50"><%= i.message %></div>
+            <div class="pt-2 flex justify-end">
+              <button data-id="<%= i._id %>" class="del px-3 py-1 text-sm border rounded hover:bg-gray-50">Delete</button>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const toast = (msg, type='success') => {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `fixed top-4 right-4 px-4 py-3 rounded-md text-white shadow-lg z-50 ${type==='success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+      el.style.opacity = 0; el.style.display = 'block';
+      el.animate([{opacity:0},{opacity:1}],{duration:200});
+      setTimeout(()=>{ el.animate([{opacity:1},{opacity:0}],{duration:200}); setTimeout(()=>{ el.style.display='none'; },200); },1200);
+    };
+
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button.del');
+      if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      if (!confirm('Delete this inquiry?')) return;
+      try {
+        const res = await fetch(`/api/admin/inquiries/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error||'Delete failed');
+        location.reload();
+      } catch (err) {
+        toast(err.message||'Delete failed','error');
+      }
+    });
+
+    // Filtering
+    document.querySelectorAll('button.flt').forEach(b => b.addEventListener('click', (e) => {
+      document.querySelectorAll('button.flt').forEach(x=>x.classList.remove('bg-indigo-600','text-white'));
+      e.currentTarget.classList.add('bg-indigo-600','text-white');
+      const f = e.currentTarget.getAttribute('data-filter');
+      document.querySelectorAll('#cards > div[data-type]').forEach(card => {
+        if (f==='all' || card.getAttribute('data-type')===f) card.style.display='';
+        else card.style.display='none';
+      });
+    }));
+  </script>
+</body>
+</html>

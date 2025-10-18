@@ -217,7 +217,7 @@ router.delete('/inquiries/:id', async (req, res) => {
 router.get('/mail-test', async (req, res) => {
   try {
     if (!isMailConfigured()) {
-      return res.status(400).json({ ok: false, error: 'Mail not configured. Check RESEND_* in .env' });
+      return res.status(400).json({ ok: false, error: 'Mail not configured. Check BREVO_* in .env' });
     }
     await sendMail({ subject: 'WearConnect Mail Test', text: 'This is a test email from WearConnect.', html: '<b>This is a test email from WearConnect.</b>' });
     res.json({ ok: true, message: 'Test email requested. Check inbox/spam.' });

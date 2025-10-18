@@ -1,24 +1,47 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { promises as fs } from 'fs';
 import path from 'path';
 
 const {
-  RESEND_API_KEY = '',
-  RESEND_FROM = '',
-  RESEND_TO = '',
+  SMTP_HOST: RAW_SMTP_HOST = '',
+  SMTP_PORT: RAW_SMTP_PORT = '',
+  SMTP_SECURE: RAW_SMTP_SECURE = '',
+  SMTP_USER: RAW_SMTP_USER = '',
+  SMTP_PASS: RAW_SMTP_PASS = '',
+  SMTP_FROM_EMAIL: RAW_SMTP_FROM_EMAIL = '',
+  SMTP_FROM_NAME: RAW_SMTP_FROM_NAME = '',
+  SMTP_TO: RAW_SMTP_TO = '',
 } = process.env;
 
-let client = null;
+const SMTP_HOST = RAW_SMTP_HOST.trim();
+const SMTP_PORT = Number(RAW_SMTP_PORT) || 587;
+const SMTP_SECURE = RAW_SMTP_SECURE.trim().toLowerCase() === 'true';
+const SMTP_USER = RAW_SMTP_USER.trim();
+const SMTP_PASS = RAW_SMTP_PASS.trim();
+const SMTP_FROM_EMAIL = RAW_SMTP_FROM_EMAIL.trim();
+const SMTP_FROM_NAME = RAW_SMTP_FROM_NAME.trim();
+const SMTP_TO = RAW_SMTP_TO.trim();
 
-function getClient() {
-  if (!client && RESEND_API_KEY) {
-    client = new Resend(RESEND_API_KEY);
+let transporter = null;
+
+function getTransporter() {
+  if (!transporter && SMTP_HOST && SMTP_USER && SMTP_PASS) {
+    console.log('[Mail] initializing SMTP transporter', { host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_SECURE });
+    transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS,
+      },
+    });
   }
-  return client;
+  return transporter;
 }
 
 export function isMailConfigured() {
-  return Boolean(RESEND_API_KEY && RESEND_FROM && (RESEND_TO || RESEND_FROM));
+  return Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS && SMTP_FROM_EMAIL && (SMTP_TO || SMTP_FROM_EMAIL));
 }
 
 async function normalizeAttachments(list = []) {
@@ -30,7 +53,7 @@ async function normalizeAttachments(list = []) {
       const fileBuffer = await fs.readFile(filePath);
       return {
         filename: item.filename || path.basename(filePath),
-        content: fileBuffer.toString('base64'),
+        content: fileBuffer,
       };
     } catch (err) {
       console.warn('[Mail] attachment read failed:', err?.message || err);
@@ -47,34 +70,44 @@ export async function sendMail({ subject, text, html, replyTo, attachments }) {
     return;
   }
 
-  const resend = getClient();
-  if (!resend) {
-    console.error('[Mail] Resend client not initialized');
+  console.log('[Mail] configuration snapshot', {
+    host: SMTP_HOST || '(missing)',
+    user: SMTP_USER ? '***set***' : '(missing)',
+    from: SMTP_FROM_EMAIL || '(missing)',
+    to: SMTP_TO || '(using from)'
+  });
+
+  const smtp = getTransporter();
+  if (!smtp) {
+    console.error('[Mail] SMTP transporter not initialized');
     return;
   }
 
   try {
-    const toList = (RESEND_TO || RESEND_FROM)
+    const toList = (SMTP_TO || SMTP_FROM_EMAIL)
       .split(/[,;]+/)
-      .map(s => s.trim())
-      .filter(Boolean);
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(', ');
 
-    const payload = {
-      from: RESEND_FROM,
-      to: toList,
-      subject,
-    };
-
-    if (replyTo) payload.reply_to = replyTo;
-    if (html) payload.html = html;
-    if (text) payload.text = text;
-
-    const normalizedAttachments = await normalizeAttachments(attachments);
-    if (normalizedAttachments.length) {
-      payload.attachments = normalizedAttachments;
+    if (!toList) {
+      console.warn('[Mail] no valid SMTP recipients resolved');
+      return;
     }
 
-    await resend.emails.send(payload);
+    const normalizedAttachments = await normalizeAttachments(attachments);
+
+    console.log('[Mail] sending via SMTP', { subject, to: toList, hasAttachments: Boolean(normalizedAttachments.length) });
+
+    await smtp.sendMail({
+      from: SMTP_FROM_NAME ? `${SMTP_FROM_NAME} <${SMTP_FROM_EMAIL}>` : SMTP_FROM_EMAIL,
+      to: toList,
+      subject,
+      text,
+      html,
+      replyTo,
+      attachments: normalizedAttachments.length ? normalizedAttachments : undefined,
+    });
   } catch (err) {
     console.error('[Mail] send failed:', err?.message || err);
   }

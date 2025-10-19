@@ -50,13 +50,16 @@ async function normalizeAttachments(list = []) {
     const filePath = item?.path;
     if (!filePath) return null;
     try {
-      const fileBuffer = await fs.readFile(filePath);
-      return {
+      await fs.access(filePath);
+      const normalized = {
         filename: item.filename || path.basename(filePath),
-        content: fileBuffer,
+        path: filePath,
       };
+      if (item.cid) normalized.cid = item.cid;
+      if (item.contentType) normalized.contentType = item.contentType;
+      return normalized;
     } catch (err) {
-      console.warn('[Mail] attachment read failed:', err?.message || err);
+      console.warn('[Mail] attachment access failed:', err?.message || err);
       return null;
     }
   }));

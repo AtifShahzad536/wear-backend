@@ -47,12 +47,22 @@ export function isMailConfigured() {
 async function normalizeAttachments(list = []) {
   if (!Array.isArray(list) || !list.length) return [];
   const attachments = await Promise.all(list.map(async (item) => {
-    const filePath = item?.path;
+    if (!item) return null;
+    const filename = item.filename || 'attachment';
+
+    if (item.content && Buffer.isBuffer(item.content)) {
+      const normalized = { filename, content: item.content };
+      if (item.cid) normalized.cid = item.cid;
+      if (item.contentType) normalized.contentType = item.contentType;
+      return normalized;
+    }
+
+    const filePath = item.path;
     if (!filePath) return null;
     try {
       await fs.access(filePath);
       const normalized = {
-        filename: item.filename || path.basename(filePath),
+        filename: filename || path.basename(filePath),
         path: filePath,
       };
       if (item.cid) normalized.cid = item.cid;

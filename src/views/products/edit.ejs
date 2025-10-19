@@ -96,7 +96,12 @@
     const imgEl = document.getElementById('image');
     if (imgEl && imgEl.value) {
       let v = imgEl.value.trim().replace(/\\/g,'/');
-      if (v && v[0] !== '/') v = '/' + v;
+      if (!/^https?:\/\//i.test(v)) {
+        if (v && v[0] !== '/') v = '/' + v;
+        if (!v.startsWith('/uploads/') && !v.startsWith('/images/') && v.split('/').length === 2) {
+          v = v.replace(/^\//, '/uploads/');
+        }
+      }
       imgEl.value = v;
     }
   });

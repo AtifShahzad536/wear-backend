@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { upload } from '../middleware/upload.js';
+import { uploadToCloudinary, isCloudinaryConfigured } from '../config/cloudinary.js';
 import { Category } from '../models/Category.js';
 import { categories as seedCategories } from '../models/data.js';
 import { HomeSettings } from '../models/Home.js';
@@ -11,9 +12,23 @@ import { sendMail, isMailConfigured } from '../config/mail.js';
 const router = Router();
 
 // Upload image
-router.post('/upload', upload.single('file'), (req, res) => {
-  const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({ url: fileUrl, filename: req.file.filename });
+router.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    if (!isCloudinaryConfigured()) {
+      const fileUrl = req.file.filename ? `/uploads/${req.file.filename}` : '';
+      console.log('[Admin Upload] Cloudinary not configured, using local path', { fileUrl, filename: req.file.filename });
+      return res.status(200).json({ url: fileUrl, filename: req.file.filename || '' });
+    }
+
+    const result = await uploadToCloudinary(req.file, { folder: 'wearconnect/admin' });
+    console.log('[Admin Upload] Uploaded to Cloudinary', { publicId: result.public_id, url: result.secure_url });
+    return res.json({ url: result.secure_url, publicId: result.public_id });
+  } catch (err) {
+    console.error('Cloudinary upload failed', err);
+    res.status(500).json({ error: 'Upload failed', details: err?.message || String(err) });
+  }
 });
 
 // List uploaded files (publicly accessible URLs)
@@ -81,12 +96,13 @@ router.post('/categories/:slug/delete', upload.none(), async (req, res) => {
 
 // Products CRUD under a category
 router.post('/categories/:slug/products', upload.none(), async (req, res) => {
-  const { id, name, image, description } = req.body;
+  const { id, name, image = '', description } = req.body;
   if (!id || !name) return res.status(400).json({ error: 'id and name are required' });
   const cat = await Category.findOne({ slug: req.params.slug });
   if (!cat) return res.status(404).json({ error: 'Category not found' });
   if ((cat.products||[]).some(p => p.id === id)) return res.status(409).json({ error: 'Product id exists' });
-  const prod = { id, name, image: image || '', description: description || '' };
+  const normalizedImage = normalizeImageUrl(image);
+  const prod = { id, name, image: normalizedImage, description: description || '' };
   cat.products = cat.products || [];
   cat.products.push(prod);
   await cat.save();

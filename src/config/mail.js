@@ -15,7 +15,7 @@ const {
 
 const SMTP_HOST = RAW_SMTP_HOST.trim();
 const SMTP_PORT = Number(RAW_SMTP_PORT) || 587;
-const SMTP_SECURE = RAW_SMTP_SECURE.trim().toLowerCase() === 'true';
+const SMTP_SECURE = RAW_SMTP_SECURE.trim().toLowerCase() === 'false';
 const SMTP_USER = RAW_SMTP_USER.trim();
 const SMTP_PASS = RAW_SMTP_PASS.trim();
 const SMTP_FROM_EMAIL = RAW_SMTP_FROM_EMAIL.trim();

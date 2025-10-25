@@ -35,12 +35,12 @@
             <div class="h-40 bg-gray-100 overflow-hidden">
               <% if (p.image) { 
                    let img = (p.image || '').replace(/\\/g,'/');
-                   if (img && img[0] !== '/') img = '/' + img;
-                   // Prefer backend uploads; map /images/* to /uploads/*
-                   if (img.startsWith('/images/')) img = img.replace('/images/', '/uploads/');
-                   // If looks like "/filename.ext" (no folder), prefix /uploads/
-                   if (!img.startsWith('/uploads/') && img.split('/').length === 2) {
-                     img = img.replace(/^\//, '/uploads/');
+                   if (!/^https?:\/\//i.test(img)) {
+                     if (img && img[0] !== '/') img = '/' + img;
+                     if (img.startsWith('/images/')) img = img.replace('/images/', '/uploads/');
+                     if (!img.startsWith('/uploads/') && img.split('/').length === 2) {
+                       img = img.replace(/^\//, '/uploads/');
+                     }
                    }
               %>
                 <img src="<%= img %>" alt="<%= p.name %>" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />

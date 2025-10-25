@@ -11,6 +11,18 @@ import { sendMail, isMailConfigured } from '../config/mail.js';
 
 const router = Router();
 
+function normalizeImageUrl(value) {
+  if (!value) return '';
+  let v = String(value).trim().replace(/\\/g, '/');
+  if (/^https?:\/\//i.test(v)) return v;
+  if (v && v[0] !== '/') v = '/' + v;
+  if (v.startsWith('/images/')) v = v.replace('/images/', '/uploads/');
+  if (!v.startsWith('/uploads/') && v.split('/').length === 2) {
+    v = v.replace(/^\//, '/uploads/');
+  }
+  return v;
+}
+
 // Upload image
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
@@ -114,7 +126,11 @@ router.put('/categories/:slug/products/:id', upload.none(), async (req, res) => 
   if (!cat) return res.status(404).json({ error: 'Category not found' });
   const idx = (cat.products||[]).findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Product not found' });
-  Object.assign(cat.products[idx], req.body);
+  const updates = { ...req.body };
+  if (Object.prototype.hasOwnProperty.call(updates, 'image')) {
+    updates.image = normalizeImageUrl(updates.image);
+  }
+  Object.assign(cat.products[idx], updates);
   await cat.save();
   res.json(cat.products[idx]);
 });
@@ -125,7 +141,11 @@ router.post('/categories/:slug/products/:id', upload.none(), async (req, res) =>
   if (!cat) return res.status(404).json({ error: 'Category not found' });
   const idx = (cat.products||[]).findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Product not found' });
-  Object.assign(cat.products[idx], req.body);
+  const updates = { ...req.body };
+  if (Object.prototype.hasOwnProperty.call(updates, 'image')) {
+    updates.image = normalizeImageUrl(updates.image);
+  }
+  Object.assign(cat.products[idx], updates);
   await cat.save();
   res.json(cat.products[idx]);
 });

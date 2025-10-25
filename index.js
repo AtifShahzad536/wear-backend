@@ -33,14 +33,25 @@ app.use(express.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 app.set('views', path.resolve(process.cwd(), 'src', 'views'));
 
+// Cache control middleware for static files
+const staticOptions = {
+  setHeaders: (res, path) => {
+    // Set cache control for images (1 year)
+    if (/\.(jpg|jpeg|png|gif|ico|svg|webp)$/i.test(path)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      res.setHeader('Expires', new Date(Date.now() + 31536000000).toUTCString());
+    }
+  }
+};
+
 // Static uploads (primary)
-app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads'), staticOptions));
 // Static uploads (legacy folder fallback: server/server/uploads)
-app.use('/uploads', express.static(path.resolve(process.cwd(), 'server', 'uploads')));
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'server', 'uploads'), staticOptions));
 // Serve /images from backend uploads folder (alias to uploads)
-app.use('/images', express.static(path.resolve(process.cwd(), 'uploads')));
+app.use('/images', express.static(path.resolve(process.cwd(), 'uploads'), staticOptions));
 // Serve files under server/service/uploads publicly
-app.use('/service/uploads', express.static(path.resolve(process.cwd(), 'service', 'uploads')));
+app.use('/service/uploads', express.static(path.resolve(process.cwd(), 'service', 'uploads'), staticOptions));
 
 app.use('/api', categoryRoutes);
 app.use('/api/auth', authRoutes);

@@ -1,0 +1,856 @@
+<%- include('../partials/header', { title: 'Order Details — ' + inquiry.name }) %>
+<%- include('../partials/sidebar', { activePage: 'inquiries' }) %>
+
+    <!-- Three.js Libraries for 3D Preview (same as EAY Sports) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/DecalGeometry.js"></script>
+
+    <!-- Main -->
+    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6 space-y-6">
+
+      <!-- Back + PDF buttons -->
+      <div class="flex items-center justify-between mb-4">
+        <a href="/admin/inquiries" class="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-semibold transition">
+          <i class="bi bi-chevron-left"></i> Back to Orders
+        </a>
+        <a href="/admin/inquiries/<%= inquiry._id %>/pdf" target="_blank"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl shadow-sm transition">
+          <i class="bi bi-file-earmark-pdf-fill"></i> Generate PDF Invoice
+        </a>
+      </div>
+
+      <!-- Flash Success -->
+      <% if (locals.success) { %>
+        <div class="flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl text-sm font-semibold shadow-sm">
+          <i class="bi bi-check-circle-fill"></i> <%= success %>
+        </div>
+      <% } %>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- LEFT: Order Details -->
+        <div class="lg:col-span-2 space-y-6">
+
+          <%
+            // Parse designConfig
+            const cfg = inquiry.designConfig || {};
+            const meshStates = cfg.meshStates || {};
+            const decals = cfg.decals || [];
+            const materialFinish = cfg.materialFinish || 'matte';
+            const lightingPreset = cfg.lightingPreset || 'city';
+            const layersMetadata = inquiry.layersMetadata || {};
+            const modelUrl = inquiry.modelUrl || '';
+          %>
+
+          <!-- 3D Interactive Viewer (only if modelUrl exists) -->
+          <% if (modelUrl) { %>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h5 class="font-bold text-slate-800 uppercase tracking-wide text-sm border-b pb-3 mb-4">
+              <i class="bi bi-badge-3d-fill text-indigo-500 me-1"></i> 3D Interactive Design Viewer
+            </h5>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- 3D Viewer -->
+              <div class="bg-slate-50 border rounded-xl p-3">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-black text-slate-400 uppercase tracking-wider">
+                    <i class="bi bi-arrows-move me-1"></i> 3D Interactive Viewer
+                  </span>
+                  <small class="text-slate-400 text-[10px]">Drag to rotate · Scroll to zoom</small>
+                </div>
+                <div id="three-container-inquiry" style="width:100%;height:340px;background:#eef2f3;position:relative;" class="rounded-xl border">
+                  <div class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs spinner-label">
+                    <span class="inline-block w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin mr-2"></span>
+                    Loading 3D Workspace...
+                  </div>
+                </div>
+              </div>
+
+              <!-- Specs Breakdown -->
+              <div class="bg-slate-50 border rounded-xl p-4">
+                <div class="text-xs font-black text-indigo-600 uppercase tracking-wider mb-3">
+                  <i class="bi bi-gear-wide-connected me-1"></i> Custom Specifications
+                </div>
+
+                <!-- Material & Finish -->
+                <div class="mb-3">
+                  <span class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Material & Finish</span>
+                  <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-700 border border-slate-300">
+                    Finish: <%= materialFinish %>
+                  </span>
+                  <% if (cfg.globalPattern && cfg.globalPattern !== 'none') { %>
+                  <span class="ml-1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-800 text-white">
+                    Pattern: <%= cfg.globalPattern %>
+                  </span>
+                  <% } %>
+                </div>
+
+                <!-- Component Colors -->
+                <% const meshKeys = Object.keys(meshStates).filter(k => meshStates[k] && meshStates[k].color); %>
+                <% if (meshKeys.length > 0) { %>
+                <div class="mb-3">
+                  <span class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Component Colors</span>
+                  <div class="grid grid-cols-2 gap-1.5">
+                    <% meshKeys.forEach(function(meshId) {
+                      const state = meshStates[meshId];
+                      const meta = layersMetadata[meshId] || layersMetadata[meshId + '.obj'] || {};
+                      const displayName = meta.display_name || meta.display || meshId.replace('.obj','').replace(/_/g,' ');
+                      if (meta.merge_parent) return;
+                    %>
+                    <div class="bg-white border rounded-lg p-2 flex items-center gap-2">
+                      <span class="w-3.5 h-3.5 rounded-full border border-slate-200 flex-shrink-0" style='background-color:<%= state.color || "#fff" %>'></span>
+                      <span class="text-[10px] font-semibold text-slate-700 truncate"><%= displayName %></span>
+                    </div>
+                    <% }); %>
+                  </div>
+                </div>
+                <% } %>
+
+                <!-- Text Decals -->
+                <% const textDecals = decals.filter(function(d){ return (d.type || 'text') === 'text'; }); %>
+                <% if (textDecals.length > 0) { %>
+                <div class="mb-3">
+                  <span class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Custom Text / Typography</span>
+                  <% textDecals.forEach(function(d) { %>
+                  <div class="bg-white border rounded-lg p-2 mb-1.5 text-[10px]">
+                    <div class="font-bold text-slate-800">"<%= d.text || '' %>"</div>
+                    <div class="text-slate-400 mt-0.5">Font: <%= d.font || 'Outfit' %> · Color: <%= d.color || '#fff' %></div>
+                  </div>
+                  <% }); %>
+                </div>
+                <% } %>
+
+                <!-- Image Decals -->
+                <% const imgDecals = decals.filter(function(d){ return (d.type || 'text') === 'image'; }); %>
+                <% if (imgDecals.length > 0) { %>
+                <div>
+                  <span class="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Applied Graphics / Logos</span>
+                  <div class="flex flex-wrap gap-2">
+                  <% imgDecals.forEach(function(d) { %>
+                    <div class="bg-white border rounded-lg p-2 flex items-center gap-2">
+                      <% if (d.imageUrl) { %><img src="<%= d.imageUrl %>" style="height:20px;max-width:32px;object-fit:contain;" /><% } %>
+                      <span class="text-[9px] font-bold text-slate-600"><%= d.text || 'Logo' %></span>
+                    </div>
+                  <% }); %>
+                  </div>
+                </div>
+                <% } %>
+              </div>
+            </div>
+          </div>
+          <% } %>
+
+          <!-- Design Screenshot Preview (fallback / supplementary) -->
+          <% if (inquiry.fileUrl) { %>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h5 class="font-bold text-slate-800 uppercase tracking-wide text-sm border-b pb-3 mb-4">Design Screenshot</h5>
+            <div class="w-full bg-slate-50 border border-gray-100 rounded-xl overflow-hidden flex items-center justify-center p-4">
+              <img src="<%= inquiry.fileUrl %>" alt="Custom 3D Design Preview"
+                   class="max-h-64 max-w-full object-contain drop-shadow-md" />
+            </div>
+            <a href="<%= inquiry.fileUrl %>" target="_blank"
+               class="mt-2 inline-flex items-center gap-2 text-xs text-indigo-600 font-bold hover:underline">
+              <i class="bi bi-box-arrow-up-right"></i> Open Full Size
+            </a>
+          </div>
+          <% } %>
+
+          <!-- Order Message / Roster -->
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h5 class="font-bold text-slate-800 uppercase tracking-wide text-sm border-b pb-3 mb-4">
+              <i class="bi bi-chat-text-fill text-indigo-500 me-1"></i> Order Details / Roster
+            </h5>
+            <pre class="text-sm text-slate-600 whitespace-pre-wrap bg-slate-50 rounded-xl p-4 border leading-relaxed overflow-x-auto max-h-[400px] overflow-y-auto"><%= inquiry.message %></pre>
+          </div>
+
+        </div>
+
+        <!-- RIGHT: Sidebar -->
+        <div class="space-y-6">
+
+          <!-- Status Update Form -->
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h5 class="font-bold text-slate-800 uppercase tracking-wide text-sm border-b pb-3 mb-4">Order Status</h5>
+            <form action="/admin/inquiries/<%= inquiry._id %>/status" method="POST" class="space-y-4">
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Set Current Status</label>
+                <select name="status"
+                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-semibold text-slate-800 cursor-pointer focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                  <% ['Pending', 'In Review', 'Quoted', 'Processing', 'Completed', 'Cancelled'].forEach(function(s) { %>
+                    <option value="<%= s %>" <%= inquiry.status === s ? 'selected' : '' %>><%= s %></option>
+                  <% }); %>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Internal Admin Note</label>
+                <textarea name="admin_note" rows="4"
+                  class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
+                  placeholder="Write internal notes here (visible to admin only)..."><%= inquiry.admin_note || '' %></textarea>
+              </div>
+              <button type="submit"
+                class="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm transition">
+                <i class="bi bi-save2-fill"></i> Save Changes
+              </button>
+            </form>
+          </div>
+
+          <!-- Customer Details -->
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h5 class="font-bold text-slate-800 uppercase tracking-wide text-sm border-b pb-3 mb-4">Customer Details</h5>
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between items-center gap-3">
+                <span class="text-slate-400 font-semibold flex-shrink-0">Name:</span>
+                <strong class="text-slate-800 text-right"><%= inquiry.name %></strong>
+              </div>
+              <div class="flex justify-between items-center gap-3">
+                <span class="text-slate-400 font-semibold flex-shrink-0">Email:</span>
+                <a href="mailto:<%= inquiry.email %>" class="text-indigo-600 font-semibold hover:underline text-right break-all"><%= inquiry.email %></a>
+              </div>
+              <% if (inquiry.phone) { %>
+              <div class="flex justify-between items-center gap-3">
+                <span class="text-slate-400 font-semibold flex-shrink-0">Phone:</span>
+                <strong class="text-slate-800 text-right"><%= inquiry.phone %></strong>
+              </div>
+              <% } %>
+              <% if (inquiry.company) { %>
+              <div class="flex justify-between items-center gap-3">
+                <span class="text-slate-400 font-semibold flex-shrink-0">Country:</span>
+                <strong class="text-slate-800 text-right"><%= inquiry.company %></strong>
+              </div>
+              <% } %>
+              <div class="flex justify-between items-start gap-3 pt-2 border-t">
+                <span class="text-slate-400 font-semibold flex-shrink-0">Submitted:</span>
+                <strong class="text-slate-600 text-right text-xs"><%= new Date(inquiry.createdAt).toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' }) %></strong>
+              </div>
+              <div class="flex justify-between items-center gap-3 pt-2 border-t">
+                <span class="text-slate-400 font-semibold flex-shrink-0">Status:</span>
+                <%
+                  const statusColors = {
+                    'Pending':    'bg-yellow-50 text-yellow-700 border-yellow-200',
+                    'In Review':  'bg-blue-50 text-blue-700 border-blue-200',
+                    'Quoted':     'bg-purple-50 text-purple-700 border-purple-200',
+                    'Processing': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                    'Completed':  'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    'Cancelled':  'bg-rose-50 text-rose-700 border-rose-200',
+                  };
+                  const badgeCls = statusColors[inquiry.status] || 'bg-gray-50 text-gray-600 border-gray-200';
+                %>
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border <%= badgeCls %>">
+                  <%= inquiry.status || 'Pending' %>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h5 class="font-bold text-slate-800 uppercase tracking-wide text-sm border-b pb-3 mb-4">Quick Actions</h5>
+            <% if (inquiry.phone) { %>
+            <a href="https://wa.me/<%= inquiry.phone.replace(/[^0-9]/g, '') %>" target="_blank"
+               class="flex items-center justify-center gap-2 w-full py-2.5 bg-green-500 hover:bg-green-600 text-white text-sm font-bold rounded-xl transition shadow-sm mb-2">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M20.52 3.48A11.86 11.86 0 0 0 12 0C5.37 0 0 5.37 0 12c0 2.11.55 4.16 1.59 5.97L0 24l6.22-1.56A11.95 11.95 0 0 0 12 24c6.63 0 12-5.37 12-12 0-3.21-1.25-6.23-3.48-8.52z"/></svg>
+              Chat on WhatsApp
+            </a>
+            <% } %>
+            <a href="mailto:<%= inquiry.email %>"
+               class="flex items-center justify-center gap-2 w-full py-2.5 border border-gray-200 hover:bg-gray-50 text-slate-700 text-sm font-bold rounded-xl transition">
+              <i class="bi bi-envelope-fill"></i> Send Email
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Three.js 3D Viewer Script (same logic as EAY Sports show.blade.php) -->
+  <% 
+    const _cfg = inquiry.designConfig || {};
+    const _ms = _cfg.meshStates || {};
+    const _dc = _cfg.decals || [];
+    const _mf = _cfg.materialFinish || 'matte';
+    const _lp = _cfg.lightingPreset || 'city';
+  %>
+  <% if (inquiry.modelUrl) { %>
+  <script>
+    (function() {
+      const container = document.getElementById('three-container-inquiry');
+      if (!container) return;
+      const modelUrl = '<%- inquiry.modelUrl %>';
+      const meshStates = <%- JSON.stringify(_ms) %>;
+      const layersMetadata = <%- JSON.stringify(inquiry.layersMetadata || {}) %>;
+      const decals = <%- JSON.stringify(_dc) %>;
+      const materialFinish = '<%- _mf %>';
+      const lightingPreset = '<%- _lp %>';
+
+      const whiteTex = new THREE.CanvasTexture(document.createElement('canvas'));
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color('#eef2f3');
+
+      const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 100);
+      camera.position.set(0, 0.4, 2.8);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.35;
+      renderer.physicallyCorrectLights = true;
+      container.appendChild(renderer.domElement);
+
+      // HDRi Environment
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+      new THREE.RGBELoader().load(
+        'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/equirectangular/royal_esplanade_1k.hdr',
+        function(texture) {
+          const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+          scene.environment = envMap;
+          texture.dispose();
+          pmremGenerator.dispose();
+        }
+      );
+
+      // Lighting
+      const isNight = lightingPreset === 'night';
+      const isStudio = lightingPreset === 'studio';
+      scene.add(new THREE.AmbientLight('#ffffff', isNight ? 0.3 : 1.2));
+      var spotLight = new THREE.SpotLight('#ffffff', isStudio ? 3.0 : 2.2);
+      spotLight.position.set(10, 15, 10);
+      spotLight.angle = 0.3;
+      spotLight.penumbra = 1;
+      scene.add(spotLight);
+      var dirLight = new THREE.DirectionalLight('#ffffff', isNight ? 0.15 : 0.8);
+      dirLight.position.set(-5, 5, -5);
+      scene.add(dirLight);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 1.8;
+      controls.minPolarAngle = Math.PI / 4;
+      controls.minDistance = 1.5;
+      controls.maxDistance = 6.0;
+
+      const loader = new THREE.GLTFLoader();
+      loader.load(modelUrl, function(gltf) {
+        const spinner = container.querySelector('.spinner-label');
+        if (spinner) spinner.remove();
+
+        const model = gltf.scene;
+        const scale = 1.8;
+        model.scale.set(scale, scale, scale);
+        model.updateMatrixWorld(true);
+        const scaledBox = new THREE.Box3().setFromObject(model);
+        const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+        model.position.sub(scaledCenter);
+
+        model.traverse(function(node) {
+          if (node.isMesh) {
+            if (node.material) node.material.side = THREE.DoubleSide;
+
+            const meta = layersMetadata[node.name] || layersMetadata[node.name + '.obj'] || {};
+            const stateKey = meta.merge_parent || node.name;
+            const parentMeta = layersMetadata[stateKey] || layersMetadata[stateKey + '.obj'] || {};
+            if (meta.is_locked || parentMeta.is_locked) return;
+
+            const state = meshStates[stateKey] || meshStates[stateKey + '.obj'];
+            if (state) {
+              const mat = node.material.clone();
+              mat.userData.uniforms = {
+                uColor: { value: new THREE.Color(state.color || '#ffffff').convertSRGBToLinear() },
+                uIsGradient: { value: state.isGrad ? 1.0 : 0.0 },
+                uColor1: { value: new THREE.Color(state.grad1 || '#ffffff').convertSRGBToLinear() },
+                uColor2: { value: new THREE.Color(state.grad2 || '#ffffff').convertSRGBToLinear() },
+                uHasPattern: { value: 0.0 },
+                uPatternColor: { value: new THREE.Color(state.pColor || '#ffffff').convertSRGBToLinear() },
+                uPatternTexture: { value: whiteTex },
+                uPatternType: { value: 0.0 },
+                uMinY: { value: 0 },
+                uMaxY: { value: 1 },
+                uPatternSize: { value: state.pSize || 0.2 },
+                uPatternOffset: { value: new THREE.Vector3(state.pOffsetX || 0, state.pOffsetY || 0, state.pOffsetZ || 0) },
+                uPatternRotation: { value: state.pRotation || 0 },
+                uPatternMinY: { value: state.pMinY === undefined ? 0.0 : state.pMinY },
+                uPatternMaxY: { value: state.pMaxY === undefined ? 1.0 : state.pMaxY },
+                uPatternMappingMode: { value: state.pMappingMode === undefined ? 0.0 : parseFloat(state.pMappingMode) },
+                uLocalMatrix: { value: node.matrix }
+              };
+
+              mat.onBeforeCompile = function(shader) {
+                Object.assign(shader.uniforms, mat.userData.uniforms);
+                shader.vertexShader = [
+                  'uniform mat4 uLocalMatrix;',
+                  'varying vec3 vLocalPos;',
+                  'varying vec3 vModelPos;',
+                  'varying vec3 vModelNormal;',
+                  'varying vec2 vUv;',
+                  shader.vertexShader
+                ].join('\n').replace(
+                  '#include <begin_vertex>',
+                  '#include <begin_vertex>\nvLocalPos = position;\nvModelPos = (uLocalMatrix * vec4(position, 1.0)).xyz;\nvModelNormal = normalize((uLocalMatrix * vec4(normal, 0.0)).xyz);\nvUv = uv;'
+                );
+                shader.fragmentShader = [
+                  'uniform vec3 uColor;','uniform float uIsGradient;','uniform vec3 uColor1;','uniform vec3 uColor2;',
+                  'uniform float uMinY;','uniform float uMaxY;','uniform float uHasPattern;','uniform vec3 uPatternColor;',
+                  'uniform sampler2D uPatternTexture;','uniform float uPatternType;','uniform float uPatternSize;',
+                  'uniform vec3 uPatternOffset;','uniform float uPatternRotation;','uniform float uPatternMinY;',
+                  'uniform float uPatternMaxY;','uniform float uPatternMappingMode;',
+                  'varying vec3 vLocalPos;','varying vec3 vModelPos;','varying vec3 vModelNormal;','varying vec2 vUv;',
+                  'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }',
+                  'float noise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(hash(i + vec2(0,0)), hash(i + vec2(1,0)), f.x), mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y); }',
+                  shader.fragmentShader
+                ].join('\n').replace(
+                  'vec4 diffuseColor = vec4( diffuse, opacity );',
+                  'vec3 baseColor = uColor;\n' +
+                  'if (uIsGradient > 0.5) {\n' +
+                  '  float t = clamp((vLocalPos.y - uMinY)/(uMaxY - uMinY),0.0,1.0);\n' +
+                  '  t = smoothstep(0.1,0.9,t);\n' +
+                  '  baseColor = mix(uColor2, uColor1, t);\n' +
+                  '}\n' +
+                  'vec3 finalColor = baseColor;\n' +
+                  '\n' +
+                  '// 1. Procedural Global Patterns\n' +
+                  'float patStrength = 0.0;\n' +
+                  'if (uPatternType > 0.5 && uPatternType < 1.5) {\n' +
+                  '  vec2 grid = fract(vUv * 40.0);\n' +
+                  '  patStrength = step(0.5, grid.x) == step(0.5, grid.y) ? 0.1 : -0.1;\n' +
+                  '} else if (uPatternType > 1.5 && uPatternType < 2.5) {\n' +
+                  '  patStrength = (noise(vUv * 10.0) - 0.5) * 0.4;\n' +
+                  '} else if (uPatternType > 2.5) {\n' +
+                  '  vec2 grid = fract(vUv * 30.0) - 0.5;\n' +
+                  '  patStrength = length(grid) < 0.3 ? -0.2 : 0.0;\n' +
+                  '}\n' +
+                  'finalColor += patStrength;\n' +
+                  '\n' +
+                  '// 2. Mesh-Specific Custom Patterns\n' +
+                  'if (uHasPattern > 0.5) {\n' +
+                  '  float heightT = clamp((vLocalPos.y - uMinY)/(uMaxY - uMinY),0.0,1.0);\n' +
+                  '  float lowerFade = smoothstep(uPatternMinY - 0.05, uPatternMinY + 0.05, heightT);\n' +
+                  '  float upperFade = 1.0 - smoothstep(uPatternMaxY - 0.05, uPatternMaxY + 0.05, heightT);\n' +
+                  '  float mask = clamp(lowerFade * upperFade, 0.0, 1.0);\n' +
+                  '  float sRot = sin(uPatternRotation);\n' +
+                  '  float cRot = cos(uPatternRotation);\n' +
+                  '  vec4 patternSample = vec4(0.0);\n' +
+                  '  if (uPatternMappingMode < 0.5) {\n' +
+                  '    vec2 mappedUv = vUv - vec2(0.5);\n' +
+                  '    mappedUv = mappedUv / uPatternSize;\n' +
+                  '    mappedUv = mappedUv + uPatternOffset.xy;\n' +
+                  '    mappedUv = vec2(mappedUv.x * cRot - mappedUv.y * sRot, mappedUv.x * sRot + mappedUv.y * cRot);\n' +
+                  '    mappedUv = mappedUv + vec2(0.5);\n' +
+                  '    patternSample = texture2D(uPatternTexture, mappedUv);\n' +
+                  '  } else if (uPatternMappingMode > 1.5) {\n' +
+                  '    float angle = atan(vModelPos.z, vModelPos.x);\n' +
+                  '    float u_cyl = angle * 0.3;\n' +
+                  '    float v_cyl = vModelPos.y;\n' +
+                  '    vec2 mappedUv = vec2(u_cyl, v_cyl) / uPatternSize + uPatternOffset.xy;\n' +
+                  '    mappedUv = vec2(mappedUv.x * cRot - mappedUv.y * sRot, mappedUv.x * sRot + mappedUv.y * cRot);\n' +
+                  '    patternSample = texture2D(uPatternTexture, mappedUv);\n' +
+                  '  } else {\n' +
+                  '    vec3 blending = abs(normalize(vModelNormal));\n' +
+                  '    vec2 uvX = vec2(vModelPos.z + uPatternOffset.x, vModelPos.y + uPatternOffset.y) / uPatternSize;\n' +
+                  '    vec2 uvY = vec2(vModelPos.x + uPatternOffset.x, vModelPos.z + uPatternOffset.y) / uPatternSize;\n' +
+                  '    vec2 uvZ = vec2(vModelPos.x + uPatternOffset.x, vModelPos.y + uPatternOffset.y) / uPatternSize;\n' +
+                  '    if (blending.x >= blending.y && blending.x >= blending.z) {\n' +
+                  '      patternSample = texture2D(uPatternTexture, uvX);\n' +
+                  '    } else if (blending.y >= blending.x && blending.y >= blending.z) {\n' +
+                  '      patternSample = texture2D(uPatternTexture, uvY);\n' +
+                  '    } else {\n' +
+                  '      patternSample = texture2D(uPatternTexture, uvZ);\n' +
+                  '    }\n' +
+                  '  }\n' +
+                  '  float patVal = patternSample.r * mask;\n' +
+                  '  vec4 cornerSample = texture2D(uPatternTexture, vec2(0.01, 0.01));\n' +
+                  '  float isBgWhite = step(0.5, cornerSample.r);\n' +
+                  '  if (isBgWhite > 0.5) {\n' +
+                  '    finalColor = mix(uPatternColor, finalColor, patVal);\n' +
+                  '  } else {\n' +
+                  '    finalColor = mix(finalColor, uPatternColor, patVal);\n' +
+                  '  }\n' +
+                  '}\n' +
+                  'if (!gl_FrontFacing) {\n' +
+                  '  finalColor = vec3(0.92, 0.92, 0.92);\n' +
+                  '}\n' +
+                  'vec4 diffuseColor = vec4(finalColor, opacity);'
+                );
+              };
+
+              mat.roughness = materialFinish === 'gloss' ? 0.1 : materialFinish === 'metallic' ? 0.2 : 0.8;
+              mat.metalness = materialFinish === 'metallic' ? 0.8 : 0.0;
+              mat.side = THREE.DoubleSide;
+              node.geometry.computeBoundingBox();
+              mat.userData.uniforms.uMinY.value = node.geometry.boundingBox.min.y;
+              mat.userData.uniforms.uMaxY.value = node.geometry.boundingBox.max.y;
+
+              if (state.pUrl) {
+                const pLoader = new THREE.TextureLoader();
+                pLoader.setCrossOrigin('anonymous');
+                pLoader.load(state.pUrl, function(tex) {
+                  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+                  mat.userData.uniforms.uPatternTexture.value = tex;
+                  mat.userData.uniforms.uHasPattern.value = 1.0;
+                  mat.needsUpdate = true;
+                });
+              }
+              node.material = mat;
+            }
+          }
+        });
+
+        const viewerGroup = new THREE.Group();
+        scene.add(viewerGroup);
+        viewerGroup.add(model);
+        model.updateMatrixWorld(true);
+
+        // Apply decals (text + image)
+        const DecalGeo = THREE.DecalGeometry;
+        decals.forEach(function(d) {
+          const norm = function(id) {
+            if (!id) return '';
+            return id.toLowerCase().replace(/\.obj$/i, '').replace(/[^a-z0-9]/g, '');
+          };
+          const targetMeshes = [];
+          model.traverse(function(m) {
+            if (!m.isMesh) return;
+            let isTarget = m.name === d.meshId;
+            if (!isTarget) {
+              const normM = norm(m.name);
+              const normD = norm(d.meshId);
+              const mMeta = layersMetadata[m.name] || layersMetadata[m.name + '.obj'] || {};
+              const dMeta = layersMetadata[d.meshId] || layersMetadata[d.meshId + '.obj'] || {};
+              if (normM === normD) isTarget = true;
+              else if (mMeta.merge_parent && norm(mMeta.merge_parent) === normD) isTarget = true;
+              else if (dMeta.merge_parent && norm(dMeta.merge_parent) === normM) isTarget = true;
+            }
+            if (isTarget) targetMeshes.push(m);
+          });
+          if (!targetMeshes.length) return;
+          if (!d.worldPoint || !d.worldNormal) return;
+
+          const point = new THREE.Vector3().fromArray(d.worldPoint);
+          const normal = new THREE.Vector3().fromArray(d.worldNormal);
+
+          const up = Math.abs(normal.y) < 0.95
+            ? new THREE.Vector3(0, 1, 0)
+            : new THREE.Vector3(1, 0, 0);
+          const right = new THREE.Vector3().crossVectors(up, normal).normalize();
+          const newUp = new THREE.Vector3().crossVectors(normal, right).normalize();
+          const m4 = new THREE.Matrix4().makeBasis(right, newUp, normal);
+
+          // Apply rotation
+          const rotation = d.rotation || 0;
+          const mRotation = new THREE.Matrix4().makeRotationZ(rotation);
+          m4.multiply(mRotation);
+
+          const orientation = new THREE.Euler().setFromRotationMatrix(m4);
+
+          const sx = d.decalScaleX !== undefined ? d.decalScaleX : (d.decalScale || 0.15);
+          const sy = d.decalScaleY !== undefined ? d.decalScaleY : (d.decalScale || 0.15);
+          const decalSize = new THREE.Vector3(sx, sy * 0.25, 0.3);
+
+          if (d.type === 'text' && d.text) {
+            try {
+              let canvas = document.createElement('canvas');
+              canvas.width = 512; canvas.height = 512;
+              const ctx = canvas.getContext('2d');
+              ctx.clearRect(0, 0, 512, 512);
+              ctx.fillStyle = d.color || '#ffffff';
+              const fontSize = Math.round(512 * 0.22);
+              ctx.font = `900 ${fontSize}px "${d.font || 'Outfit'}", sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(d.text, 256, 256);
+
+              const texture = new THREE.CanvasTexture(canvas);
+              targetMeshes.forEach(function(targetMesh) {
+                try {
+                  const geo = new DecalGeo(targetMesh, point, orientation, decalSize);
+                  const mat = new THREE.MeshStandardMaterial({
+                    map: texture, transparent: true, depthTest: true, depthWrite: false,
+                    polygonOffset: true, polygonOffsetFactor: -3.0, polygonOffsetUnits: -3.0
+                  });
+                  const localMatrix = targetMesh.matrixWorld.clone().invert();
+                  geo.applyMatrix4(localMatrix);
+                  const decalMesh = new THREE.Mesh(geo, mat);
+                  decalMesh.renderOrder = 999;
+                  targetMesh.add(decalMesh);
+                } catch(e) {}
+              });
+            } catch(e) {}
+          } else if (d.type === 'image' && d.imageUrl) {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, 512, 512);
+
+                // Draw centered maintaining aspect ratio
+                const scale = Math.min(512 / img.width, 512 / img.height) * 0.85;
+                const w = img.width * scale;
+                const h = img.height * scale;
+                ctx.drawImage(img, (512 - w) / 2, (512 - h) / 2, w, h);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const imgDecalSize = new THREE.Vector3(sx, sy, 0.3);
+                targetMeshes.forEach(function(targetMesh) {
+                  try {
+                    const geo = new DecalGeo(targetMesh, point, orientation, imgDecalSize);
+                    const mat = new THREE.MeshStandardMaterial({
+                      map: texture, transparent: true, depthTest: true, depthWrite: false,
+                      polygonOffset: true, polygonOffsetFactor: -3.0, polygonOffsetUnits: -3.0
+                    });
+                    const localMatrix = targetMesh.matrixWorld.clone().invert();
+                    geo.applyMatrix4(localMatrix);
+                    const decalMesh = new THREE.Mesh(geo, mat);
+                    decalMesh.renderOrder = 998;
+                    targetMesh.add(decalMesh);
+                  } catch(e) {}
+                });
+              } catch(e) {}
+            };
+            img.onerror = function() {
+              // Retry without crossOrigin
+              const retry = new Image();
+              retry.onload = function() {
+                try {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = 512;
+                  canvas.height = 512;
+                  const ctx = canvas.getContext('2d');
+                  ctx.clearRect(0, 0, 512, 512);
+                  const scale = Math.min(512 / retry.width, 512 / retry.height) * 0.85;
+                  const w = retry.width * scale;
+                  const h = retry.height * scale;
+                  ctx.drawImage(retry, (512 - w) / 2, (512 - h) / 2, w, h);
+
+                  const texture = new THREE.CanvasTexture(canvas);
+                  const imgDecalSize = new THREE.Vector3(sx, sy, 0.3);
+                  targetMeshes.forEach(function(targetMesh) {
+                    try {
+                      const geo = new DecalGeo(targetMesh, point, orientation, imgDecalSize);
+                      const mat = new THREE.MeshStandardMaterial({
+                        map: texture, transparent: true, depthTest: true, depthWrite: false,
+                        polygonOffset: true, polygonOffsetFactor: -3.0, polygonOffsetUnits: -3.0
+                      });
+                      const localMatrix = targetMesh.matrixWorld.clone().invert();
+                      geo.applyMatrix4(localMatrix);
+                      const decalMesh = new THREE.Mesh(geo, mat);
+                      decalMesh.renderOrder = 998;
+                      targetMesh.add(decalMesh);
+                    } catch(e) {}
+                  });
+                } catch(e) {}
+              };
+              retry.src = d.imageUrl;
+            };
+            img.src = d.imageUrl;
+          } else if (d.type === 'pattern' && d.imageUrl) {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() {
+              try {
+                // Background transparency processing canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth || img.width || 1024;
+                canvas.height = img.naturalHeight || img.height || 1024;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                try {
+                  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                  const data = imgData.data;
+
+                  // Detect transparency (PNG vs JPG)
+                  let hasAlpha = false;
+                  for (let i = 3; i < data.length; i += 4) {
+                    if (data[i] < 220) {
+                      hasAlpha = true;
+                      break;
+                    }
+                  }
+
+                  const tintColor = d.color || 'original';
+                  const isOriginal = tintColor === 'original';
+                  // default to black tint for original pattern layer lines if background is keyed out
+                  const tint = new THREE.Color(isOriginal ? '#000000' : tintColor);
+                  const tr = Math.round(tint.r * 255);
+                  const tg = Math.round(tint.g * 255);
+                  const tb = Math.round(tint.b * 255);
+
+                  if (hasAlpha) {
+                    if (!isOriginal) {
+                      for (let i = 0; i < data.length; i += 4) {
+                        if (data[i + 3] > 0) {
+                          data[i] = tr;
+                          data[i + 1] = tg;
+                          data[i + 2] = tb;
+                        }
+                      }
+                    }
+                  } else {
+                    const r0 = data[0], g0 = data[1], b0 = data[2];
+                    const isBgWhite = (r0 + g0 + b0) / 3 > 127;
+                    for (let i = 0; i < data.length; i += 4) {
+                      const r = data[i], g = data[i+1], b = data[i+2];
+                      const val = (r + g + b) / 3;
+                      if (isBgWhite) {
+                        let alphaFactor = val > 235 ? 0 : (val < 180 ? 255 : Math.round(255 * (1.0 - (val - 180) / 55)));
+                        data[i + 3] = alphaFactor;
+                        if (!isOriginal) {
+                          data[i] = tr; data[i + 1] = tg; data[i + 2] = tb;
+                        }
+                      } else {
+                        let alphaFactor = val < 20 ? 0 : (val > 75 ? 255 : Math.round(255 * ((val - 20) / 55)));
+                        data[i + 3] = alphaFactor;
+                        if (!isOriginal) {
+                          data[i] = tr; data[i + 1] = tg; data[i + 2] = tb;
+                        }
+                      }
+                    }
+                  }
+                  ctx.putImageData(imgData, 0, 0);
+                } catch(err) {
+                  console.error('Pattern pixel keying error:', err);
+                }
+
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+
+                const globalBox = new THREE.Box3();
+                targetMeshes.forEach(function(m) {
+                  m.updateMatrixWorld(true);
+                  globalBox.union(new THREE.Box3().setFromObject(m));
+                });
+                const globalCenter = globalBox.getCenter(new THREE.Vector3());
+                const globalSz = globalBox.getSize(new THREE.Vector3());
+                const gMinCover = 0.5;
+                const gCoverX = Math.max(gMinCover, Math.max(globalSz.x, globalSz.z) * 3.0);
+                const gCoverY = Math.max(gMinCover, globalSz.y * 3.0);
+                const gCoverZ = Math.max(gMinCover, Math.max(globalSz.x, globalSz.y, globalSz.z) * 3.0);
+                const globalDecalSize = new THREE.Vector3(gCoverX, gCoverY, gCoverZ);
+
+                const quaternion = new THREE.Quaternion().setFromEuler(orientation);
+                const globalDecalMatrix = new THREE.Matrix4().compose(globalCenter, quaternion, globalDecalSize);
+                const globalDecalMatrixInv = globalDecalMatrix.clone().invert();
+                const globalRepeatFactor = 8.0 / Math.max(0.05, d.decalScale || 0.8);
+
+                targetMeshes.forEach(function(tMesh) {
+                  try {
+                    const geo = tMesh.geometry.clone();
+                    const mat = new THREE.ShaderMaterial({
+                      extensions: { derivatives: true },
+                      uniforms: {
+                        map: { value: texture },
+                        uRepeat: { value: globalRepeatFactor },
+                        uDecalMatrixInv: { value: globalDecalMatrixInv.clone().multiply(tMesh.matrixWorld) },
+                        uDecalSize: { value: globalDecalSize },
+                        uFadeTop: { value: d.pFadeTop || 0.0 },
+                        uFadeBottom: { value: d.pFadeBottom || 0.0 },
+                        uFadeLeft: { value: d.pFadeLeft || 0.0 },
+                        uFadeRight: { value: d.pFadeRight || 0.0 },
+                        uFadeTopLeft: { value: d.pFadeTopLeft || 0.0 },
+                        uFadeTopRight: { value: d.pFadeTopRight || 0.0 },
+                        uFadeBottomLeft: { value: d.pFadeBottomLeft || 0.0 },
+                        uFadeBottomRight: { value: d.pFadeBottomRight || 0.0 },
+                      },
+                      vertexShader: `
+                        uniform mat4 uDecalMatrixInv;
+                        varying vec2 vUv;
+                        varying vec3 vDecalLocalPos;
+                        varying vec3 vDecalLocalNormal;
+                        void main() {
+                          vUv = uv;
+                          vDecalLocalPos = (uDecalMatrixInv * vec4(position, 1.0)).xyz;
+                          vDecalLocalNormal = normalize((uDecalMatrixInv * vec4(normal, 0.0)).xyz);
+                          gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+                        }
+                      `,
+                      fragmentShader: `
+                        uniform sampler2D map;
+                        uniform float uRepeat;
+                        uniform vec3 uDecalSize;
+                        varying vec2 vUv;
+                        varying vec3 vDecalLocalPos;
+                        varying vec3 vDecalLocalNormal;
+                        void main() {
+                          if (!gl_FrontFacing) discard;
+                          vec3 unscaledPos = vDecalLocalPos * uDecalSize;
+                          vec3 unscaledNormal = normalize(vDecalLocalNormal * uDecalSize);
+                          vec3 blending = abs(unscaledNormal);
+                          blending = pow(blending, vec3(16.0));
+                          blending = blending / (blending.x + blending.y + blending.z);
+
+                          vec2 uvX = unscaledPos.zy;
+                          vec2 uvY = unscaledPos.xz;
+                          vec2 uvZ = unscaledPos.xy;
+
+                          vec2 tiledUvX = uvX * uRepeat;
+                          vec2 tiledUvY = uvY * uRepeat;
+                          vec2 tiledUvZ = uvZ * uRepeat;
+
+                          vec4 colX = texture2D(map, tiledUvX);
+                          vec4 colY = texture2D(map, tiledUvY);
+                          vec4 colZ = texture2D(map, tiledUvZ);
+
+                          vec4 texColor;
+                          if (blending.z >= blending.x && blending.z >= blending.y) {
+                            texColor = colZ;
+                          } else if (blending.x >= blending.y && blending.x >= blending.z) {
+                            texColor = colX;
+                          } else {
+                            texColor = colY;
+                          }
+                          gl_FragColor = vec4(texColor.rgb, texColor.a);
+                        }
+                      `,
+                      transparent: true,
+                      depthTest: true,
+                      depthWrite: false,
+                      polygonOffset: true,
+                      polygonOffsetFactor: -1.0,
+                      polygonOffsetUnits: -1.0,
+                      side: THREE.DoubleSide,
+                    });
+
+                    const decalMesh = new THREE.Mesh(geo, mat);
+                    decalMesh.renderOrder = 997;
+                    tMesh.add(decalMesh);
+                  } catch(e) {}
+                });
+              } catch(e) {}
+            };
+            img.src = d.imageUrl;
+          }
+        });
+
+        function animate() {
+          requestAnimationFrame(animate);
+          viewerGroup.rotation.y += 0.008;
+          controls.update();
+          renderer.render(scene, camera);
+        }
+        animate();
+
+      }, undefined, function(error) {
+        console.error(error);
+        container.innerHTML = '<div class="h-full flex items-center justify-center text-slate-400 text-xs">Error loading 3D model</div>';
+      });
+
+      window.addEventListener('resize', function() {
+        if (!container.clientWidth || !container.clientHeight) return;
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+    })();
+  </script>
+  <% } %>
+
+<%- include('../partials/footer') %>

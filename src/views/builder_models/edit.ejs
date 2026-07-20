@@ -1,0 +1,356 @@
+<%- include('../partials/header', { title: 'Edit Builder Model' }) %>
+<%- include('../partials/sidebar', { activePage: 'models' }) %>
+
+    <!-- Main Content -->
+    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6 space-y-6">
+      <div class="mb-6 flex items-center justify-between">
+        <h2 class="text-2xl font-semibold">Edit 3D Builder Model: <%= model.name %></h2>
+        <a href="/admin/builder-models" class="px-4 py-2 border rounded hover:bg-gray-50 text-sm">Back</a>
+      </div>
+
+      <div class="bg-white border rounded-2xl p-6 max-w-3xl shadow-sm">
+        <form action="/api/admin/builder-models/<%= model._id %>" method="POST" id="modelForm" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Category</label>
+              <select name="category_id" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                <% 
+                  const fallbackCats = [
+                    { slug: 'wrestling', name: 'Wrestling Kits' },
+                    { slug: 'football', name: 'Football Kits' },
+                    { slug: 'cricket', name: 'Cricket Kits' },
+                    { slug: 'basketball', name: 'Basketball Kits' },
+                    { slug: 'hockey', name: 'Hockey Kits' },
+                    { slug: 'rugby', name: 'Rugby Kits' },
+                    { slug: 'tennis', name: 'Tennis Wear' },
+                    { slug: 'running', name: 'Running Wear' },
+                    { slug: 'gym', name: 'Gym/Fitness Wear' },
+                    { slug: 'shoes', name: 'Shoes' },
+                    { slug: 'gloves', name: 'Gloves' },
+                    { slug: 'caps', name: 'Caps' },
+                    { slug: 'bags', name: 'Bags' }
+                  ];
+                  const finalCategories = (categories && categories.length > 0) ? categories : fallbackCats;
+                  finalCategories.forEach(c => { 
+                %>
+                  <option value="<%= c.slug %>" <%= model.category_id === c.slug ? 'selected' : '' %>><%= c.name %> (<%= c.slug %>)</option>
+                <% }) %>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Model Name</label>
+              <input type="text" name="name" value="<%= model.name %>" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Model File URL (.gltf/.glb)</label>
+              <div class="flex gap-2">
+                <input type="text" id="model_url" name="model_url" value="<%= model.model_url %>" class="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
+                <button type="button" onclick="triggerUpload('model_url', '.glb,.gltf')" class="px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold uppercase transition">Upload</button>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Thumbnail Image URL</label>
+              <div class="flex gap-2">
+                <input type="text" id="thumbnail" name="thumbnail" value="<%= model.thumbnail %>" class="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <button type="button" onclick="triggerUpload('thumbnail', 'image/*')" class="px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold uppercase transition">Upload</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Layers Panel (Laravel Style) -->
+          <div id="layers-config-section" class="border border-slate-200 rounded-2xl p-5 bg-slate-50 space-y-4">
+            <div class="border-b pb-2 flex items-center justify-between">
+              <h3 class="font-bold text-slate-800 text-sm">3D Model Layers & Mesh Customization</h3>
+              <span id="layersCount" class="text-xs text-slate-400 font-bold"></span>
+            </div>
+            <p class="text-xs text-slate-400">Give layers client-friendly names, merge related meshes together, or lock them to prevent user editing.</p>
+            <div id="layers-list-container" class="max-h-[350px] overflow-y-auto border rounded-xl bg-white p-4 divide-y divide-slate-100">
+              <!-- Pre-filled via JavaScript from database -->
+            </div>
+          </div>
+
+          <div class="hidden">
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Material Mesh Mapping (JSON)</label>
+            <textarea id="mapping" name="mapping" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-mono"><%= JSON.stringify(model.mapping || {}) %></textarea>
+          </div>
+
+          <div class="hidden">
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Layers Metadata (JSON)</label>
+            <textarea id="layers_metadata" name="layers_metadata" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-mono"><%= JSON.stringify(model.layers_metadata || {}) %></textarea>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="status" id="status" value="true" <%= model.status ? 'checked' : '' %> class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+            <label for="status" class="text-sm text-gray-700 font-medium">Active (visible in Customizer)</label>
+          </div>
+
+          <div class="flex justify-end">
+            <button type="submit" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 shadow-md hover:-translate-y-0.5 transition">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <input type="file" id="hiddenFileInput" class="hidden" />
+
+  <!-- ThreeJS CDN for parsing GLTF/GLB -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <script>
+    let activeFieldId = '';
+    // Load pre-existing configuration from backend database
+    let meshConfig = {};
+    try {
+      meshConfig = JSON.parse(`<%- JSON.stringify(model.layers_metadata || {}) %>`);
+    } catch (e) {
+      meshConfig = {};
+    }
+
+    const gltfLoader = new THREE.GLTFLoader();
+
+    function triggerUpload(fieldId, acceptTypes) {
+      activeFieldId = fieldId;
+      const fileInput = document.getElementById('hiddenFileInput');
+      fileInput.accept = acceptTypes;
+      fileInput.value = '';
+      fileInput.click();
+    }
+
+    // Hidden input upload handler
+    document.getElementById('hiddenFileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file || !activeFieldId) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const btn = document.querySelector(`button[onclick*="${activeFieldId}"]`);
+      const originalText = btn.textContent;
+      btn.textContent = 'Uploading...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+        const urlInput = document.getElementById(activeFieldId);
+        urlInput.value = data.url;
+        urlInput.dispatchEvent(new Event('change')); // Trigger auto parsing if GLB URL
+      } catch (err) {
+        alert(err.message || 'File upload failed');
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    // Auto Parse GLB/GLTF model when url changes
+    document.getElementById('model_url').addEventListener('change', async (e) => {
+      const url = e.target.value.trim();
+      if (!url || !url.endsWith('.glb') && !url.endsWith('.gltf')) return;
+
+      const listContainer = document.getElementById('layers-list-container');
+      const section = document.getElementById('layers-config-section');
+
+      listContainer.innerHTML = '<div class="text-center py-6 text-sm text-slate-400">Parsing 3D Mesh layers...</div>';
+      section.classList.remove('hidden');
+
+      try {
+        gltfLoader.load(url, (gltf) => {
+          const meshes = [];
+          gltf.scene.traverse((child) => {
+            if (child.isMesh && child.name) {
+              meshes.push(child.name);
+            }
+          });
+
+          const uniqueMeshes = Array.from(new Set(meshes));
+          if (uniqueMeshes.length === 0) {
+            listContainer.innerHTML = '<div class="text-center py-6 text-sm text-rose-500 font-semibold">No customizable meshes found in this 3D model.</div>';
+            return;
+          }
+
+          const newMeshConfig = {};
+          uniqueMeshes.forEach(meshName => {
+            const friendlyName = meshName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            newMeshConfig[meshName] = meshConfig[meshName] || {
+              display_name: friendlyName,
+              is_locked: false,
+              show_lock: true,
+              merge_parent: null
+            };
+          });
+
+          meshConfig = newMeshConfig;
+          document.getElementById('layersCount').textContent = `${uniqueMeshes.length} meshes`;
+          renderMeshList();
+        }, undefined, (error) => {
+          console.error(error);
+          listContainer.innerHTML = '<div class="text-center py-6 text-sm text-rose-500 font-semibold">Failed to parse GLB file. Make sure it is a valid web-accessible URL.</div>';
+        });
+      } catch (err) {
+        listContainer.innerHTML = '<div class="text-center py-6 text-sm text-rose-500">Error loading model parser.</div>';
+      }
+    });
+
+    function renderMeshList() {
+      const listContainer = document.getElementById('layers-list-container');
+      listContainer.innerHTML = '';
+
+      const parentMeshes = Object.keys(meshConfig).filter(m => !meshConfig[m].merge_parent);
+      const independentMeshes = parentMeshes;
+
+      parentMeshes.forEach(meshName => {
+        const conf = meshConfig[meshName];
+        const children = Object.keys(meshConfig).filter(m => meshConfig[m].merge_parent === meshName);
+
+        let childrenHtml = '';
+        if (children.length > 0) {
+          childrenHtml = '<div class="mt-2 flex flex-wrap gap-1.5 align-items-center"><span class="text-[10px] text-slate-400 font-bold uppercase mr-1">Merged:</span>';
+          children.forEach(child => {
+            childrenHtml += `
+              <span class="inline-flex items-center gap-1 bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-lg border">
+                ${child}
+                <button type="button" onclick="unmergeMesh('${child}')" class="text-slate-400 hover:text-rose-600 font-bold ml-1">✕</button>
+              </span>
+            `;
+          });
+          childrenHtml += '</div>';
+        }
+
+        const availableToMerge = independentMeshes.filter(m => m !== meshName);
+        let optionsHtml = '<option value="">+ Merge another mesh here...</option>';
+        availableToMerge.forEach(m => {
+          optionsHtml += `<option value="${m}">${m}</option>`;
+        });
+
+        const html = `
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 py-3 items-center">
+            <div class="col-span-1">
+              <strong class="text-xs text-slate-800 block truncate" title="${meshName}">${meshName}</strong>
+              ${childrenHtml}
+            </div>
+            <div class="col-span-1">
+              <input type="text" oninput="updateDisplayName('${meshName}', this.value)" class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs" value="${conf.display_name}" placeholder="Display Name">
+            </div>
+            <div class="col-span-1">
+              <select onchange="mergeMesh('${meshName}', this.value)" class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-500">
+                ${optionsHtml}
+              </select>
+            </div>
+            <div class="col-span-1 flex flex-col gap-1.5">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" onchange="toggleLock('${meshName}', this.checked)" ${conf.is_locked ? 'checked' : ''} class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5" />
+                <span class="text-xs font-bold text-rose-600">🔒 Lock Layer</span>
+              </label>
+              <label id="show-lock-container-${meshName}" class="inline-flex items-center gap-2 cursor-pointer ${conf.is_locked ? '' : 'hidden'}">
+                <input type="checkbox" onchange="toggleShowLock('${meshName}', this.checked)" ${conf.show_lock !== false ? 'checked' : ''} class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5" />
+                <span class="text-[10px] text-slate-400 font-bold">Show lock icon on client</span>
+              </label>
+            </div>
+          </div>
+        `;
+        listContainer.insertAdjacentHTML('beforeend', html);
+      });
+
+      serializeData();
+    }
+
+    function updateDisplayName(mesh, val) {
+      meshConfig[mesh].display_name = val;
+      serializeData();
+    }
+
+    function toggleLock(mesh, checked) {
+      meshConfig[mesh].is_locked = checked;
+      const el = document.getElementById(`show-lock-container-${mesh}`);
+      if (el) {
+        if (checked) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+      }
+      serializeData();
+    }
+
+    function toggleShowLock(mesh, checked) {
+      meshConfig[mesh].show_lock = checked;
+      serializeData();
+    }
+
+    function mergeMesh(parent, child) {
+      if (!child) return;
+      meshConfig[child].merge_parent = parent;
+      renderMeshList();
+    }
+
+    function unmergeMesh(child) {
+      meshConfig[child].merge_parent = null;
+      renderMeshList();
+    }
+
+    function serializeData() {
+      // 1. Serialize Layers Metadata
+      document.getElementById('layers_metadata').value = JSON.stringify(meshConfig);
+
+      // 2. Auto-generate default colors mapping
+      const mapping = {};
+      Object.keys(meshConfig).forEach(mesh => {
+        mapping[mesh] = 'primary';
+      });
+      document.getElementById('mapping').value = JSON.stringify(mapping);
+    }
+
+    // Initial render if pre-existing configuration exists
+    if (Object.keys(meshConfig).length > 0) {
+      document.getElementById('layersCount').textContent = `${Object.keys(meshConfig).length} meshes`;
+      renderMeshList();
+    } else {
+      // Trigger parse for initial URL
+      document.getElementById('model_url').dispatchEvent(new Event('change'));
+    }
+    // Intercept form submission to use AJAX and show Toast notification
+    document.getElementById('modelForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+
+      // Ensure status is boolean
+      data.status = form.status.checked;
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = 'Saving...';
+      submitBtn.disabled = true;
+
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Failed to save model');
+
+        showToast('Builder model updated successfully!', 'success');
+        setTimeout(() => {
+          window.location.href = '/admin/builder-models';
+        }, 1500);
+      } catch (err) {
+        showToast(err.message || 'An error occurred', 'error');
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,45 @@
+<%- include('../partials/header', { title: 'Builder Models' }) %>
+<%- include('../partials/sidebar', { activePage: 'models' }) %>
+
+    <!-- Main Content -->
+    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6 space-y-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-semibold">3D Builder Models</h2>
+          <p class="text-sm text-gray-500">Configure GLTF/GLB models for the 3D Customizer</p>
+        </div>
+        <a href="/admin/builder-models/new" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">New Model</a>
+      </div>
+
+      <!-- Card Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <% (models||[]).forEach(m => { %>
+          <div class="group bg-white border rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden flex flex-col justify-between">
+            <div>
+              <div class="h-40 bg-gray-100 overflow-hidden relative">
+                <% if (m.thumbnail) { %>
+                  <img src="<%= m.thumbnail %>" alt="<%= m.name %>" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                <% } else { %>
+                  <div class="w-full h-full flex items-center justify-center text-gray-400 text-sm bg-indigo-50/50">No Thumbnail</div>
+                <% } %>
+                <span class="absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-xs font-semibold <%= m.status ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800' %>">
+                  <%= m.status ? 'Active' : 'Inactive' %>
+                </span>
+              </div>
+              <div class="p-4">
+                <div class="text-sm text-gray-500 mb-1">Category: <span class="font-semibold text-gray-700"><%= m.category_id.toUpperCase() %></span></div>
+                <div class="font-semibold text-lg text-indigo-950"><%= m.name %></div>
+                <div class="text-xs text-gray-400 mt-2 truncate">URL: <code><%= m.model_url %></code></div>
+              </div>
+            </div>
+            <div class="p-4 border-t bg-gray-50/50 flex items-center justify-between">
+              <a class="px-3 py-1 bg-white border rounded text-sm hover:bg-gray-50 transition" href="/admin/builder-models/<%= m._id %>/edit">Edit</a>
+              <form action="/api/admin/builder-models/<%= m._id %>/delete" method="POST" onsubmit="return confirm('Delete model <%= m.name %>?')">
+                <button type="submit" class="px-3 py-1 bg-white border border-red-200 text-red-600 rounded text-sm hover:bg-red-50 transition">Delete</button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </main>
+<%- include('../partials/footer') %>

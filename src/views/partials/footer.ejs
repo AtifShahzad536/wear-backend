@@ -1,0 +1,56 @@
+  </div>
+
+  <!-- Global Toast Element -->
+  <div id="globalToast" class="fixed top-4 right-4 z-50 transform translate-y-[-20px] opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-white font-bold text-xs uppercase tracking-wider">
+    <span id="globalToastIcon"></span>
+    <span id="globalToastMessage"></span>
+  </div>
+
+  <script>
+    // Global Logout controller
+    function logoutAdmin() {
+      if (!confirm('Are you sure you want to log out?')) return;
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      window.location.href = '/login-web'; // Redirect to login page
+    }
+
+    // Mobile Sidebar Toggle
+    function toggleMobileSidebar() {
+      const sidebar = document.getElementById('adminSidebar');
+      if (sidebar) {
+        if (sidebar.classList.contains('hidden')) {
+          sidebar.classList.remove('hidden');
+          sidebar.classList.add('fixed', 'inset-y-0', 'left-0', 'z-50', 'w-64', 'flex');
+        } else {
+          sidebar.classList.add('hidden');
+          sidebar.classList.remove('fixed', 'inset-y-0', 'left-0', 'z-50', 'w-64', 'flex');
+        }
+      }
+    }
+
+    // Global Toast Notification handler
+    function showToast(message, type = 'success') {
+      const toastEl = document.getElementById('globalToast');
+      const iconEl = document.getElementById('globalToastIcon');
+      const msgEl = document.getElementById('globalToastMessage');
+      
+      if (!toastEl) return;
+
+      msgEl.textContent = message;
+      
+      if (type === 'success') {
+        toastEl.className = "fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-white font-bold text-xs uppercase tracking-wider bg-emerald-600 transition-all duration-300 transform translate-y-0 opacity-100";
+        iconEl.innerHTML = "✨";
+      } else {
+        toastEl.className = "fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-white font-bold text-xs uppercase tracking-wider bg-rose-600 transition-all duration-300 transform translate-y-0 opacity-100";
+        iconEl.innerHTML = "⚠️";
+      }
+
+      // Automatically hide after 2.5 seconds
+      setTimeout(() => {
+        toastEl.className = "fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-white font-bold text-xs uppercase tracking-wider bg-transparent transition-all duration-300 transform translate-y-[-20px] opacity-0 pointer-events-none";
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

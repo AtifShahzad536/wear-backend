@@ -22,7 +22,10 @@ import bagsRoutes from './src/routes/bagsRoutes.js';
 import homeRoutes from './src/routes/homeRoutes.js';
 import inquiryRoutes from './src/routes/inquiryRoutes.js';
 import authRoutes from './src/routes/authRoutes.js';
+import builderRoutes from './src/routes/builderRoutes.js';
 import { requireAdmin } from './src/middleware/auth.js';
+import { upload } from './src/middleware/upload.js';
+import { uploadToCloudinary, isCloudinaryConfigured } from './src/config/cloudinary.js';
 
 const app = express();
 app.use(cors({ origin: config.corsOrigin }));
@@ -77,6 +80,26 @@ app.use('/api/caps', capsRoutes);
 app.use('/api/bags', bagsRoutes);
 app.use('/api/home', homeRoutes);
 app.use('/api/inquiry', inquiryRoutes);
+app.use('/api/builder', builderRoutes);
+// Public Decal upload route used by frontend 3D Customizer to upload logos and pattern overlays
+app.post('/api/decal/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
+
+    if (!isCloudinaryConfigured()) {
+      const fileUrl = req.file.filename ? `/uploads/${req.file.filename}` : '';
+      console.log('[Decal Upload] Cloudinary not configured, using local path', { fileUrl });
+      return res.status(200).json({ success: true, url: fileUrl });
+    }
+
+    const result = await uploadToCloudinary(req.file, { folder: 'wearconnect/decals' });
+    console.log('[Decal Upload] Uploaded to Cloudinary', { url: result.secure_url });
+    return res.json({ success: true, url: result.secure_url });
+  } catch (err) {
+    console.error('[Decal Upload] Upload failed', err);
+    res.status(500).json({ success: false, error: 'Upload failed', details: err?.message || String(err) });
+  }
+});
 
 app.get('/', (req, res) => {
   res.redirect('/admin/login');

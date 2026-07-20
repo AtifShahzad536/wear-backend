@@ -1,102 +1,178 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><%= title %></title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 text-gray-800">
-  <div class="min-h-screen grid grid-cols-12">
-    <!-- Sidebar -->
-    <aside class="col-span-12 md:col-span-3 lg:col-span-2 bg-white border-r p-4 space-y-2">
-      <h1 class="text-xl font-bold text-indigo-600">WearConnect Admin</h1>
-      <nav class="mt-4 space-y-1 text-sm">
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin">Dashboard</a>
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/categories">Categories</a>
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/uploads">Uploads</a>
-        <a class="block px-3 py-2 rounded bg-indigo-50 text-indigo-700" href="/admin/inquiries">Inquiries</a>
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/home/settings">Home Settings</a>
-      </nav>
-    </aside>
+<%- include('../partials/header', { title: 'Orders / Inquiries' }) %>
+<%- include('../partials/sidebar', { activePage: 'inquiries' }) %>
 
     <!-- Main -->
-    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6">
-      <div class="flex items-center justify-between mb-6">
+    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6 space-y-6">
+
+      <!-- Page Header -->
+      <div class="flex items-center justify-between mb-2">
         <div>
-          <h2 class="text-2xl font-semibold">Inquiries</h2>
-          <p class="text-gray-500 text-sm">Custom and Contact submissions</p>
+          <h2 class="text-2xl font-bold text-slate-800">Orders & Inquiries</h2>
+          <p class="text-gray-500 text-sm mt-0.5">Custom 3D jersey orders and contact form submissions</p>
         </div>
-        <div class="text-sm text-gray-500"><%= (inquiries||[]).length %> total</div>
+        <div class="text-sm font-bold text-slate-400 bg-slate-50 border border-slate-100 px-4 py-2 rounded-xl">
+          <%= (inquiries||[]).length %> total
+        </div>
       </div>
 
-      <div id="toast" class="fixed top-4 right-4 hidden px-4 py-3 rounded-md text-white shadow-lg z-50"></div>
+      <div id="toast" class="fixed top-4 right-4 hidden px-4 py-3 rounded-xl text-white shadow-lg z-50 font-semibold text-sm"></div>
 
-      <div class="flex items-center gap-2 mb-4">
-        <button data-filter="all" class="flt px-3 py-1 border rounded bg-indigo-600 text-white">All</button>
-        <button data-filter="custom" class="flt px-3 py-1 border rounded">Custom</button>
-        <button data-filter="contact" class="flt px-3 py-1 border rounded">Contact</button>
-      </div>
-
-      <div id="cards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <% (inquiries || []).forEach(i => { %>
-          <div class="bg-white rounded-xl border shadow-sm hover:shadow-md transition p-4 space-y-2" data-type="<%= i.type %>">
-            <div class="flex items-center justify-between">
-              <div class="text-xs px-2 py-1 rounded-full <%= i.type==='custom' ? 'bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700' %>"><%= i.type %></div>
-              <div class="text-xs text-gray-500"><%= new Date(i.createdAt).toLocaleString() %></div>
-            </div>
-            <div class="text-sm"><span class="font-semibold">Name:</span> <%= i.name %></div>
-            <div class="text-sm"><span class="font-semibold">Email:</span> <%= i.email %></div>
-            <% if (i.phone) { %><div class="text-sm"><span class="font-semibold">Phone:</span> <%= i.phone %></div><% } %>
-            <% if (i.company) { %><div class="text-sm"><span class="font-semibold">Company:</span> <%= i.company %></div><% } %>
-            <% if (i.fileUrl) { %>
-              <div class="text-sm"><span class="font-semibold">File:</span> <a class="text-indigo-700 hover:underline" href="<%= i.fileUrl %>" target="_blank">Download</a></div>
-            <% } %>
-            <div class="text-sm text-gray-700 whitespace-pre-line border rounded p-2 bg-gray-50"><%= i.message %></div>
-            <div class="pt-2 flex justify-end">
-              <button data-id="<%= i._id %>" class="del px-3 py-1 text-sm border rounded hover:bg-gray-50">Delete</button>
-            </div>
+      <!-- Filters / Search Card -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4">
+        <div class="flex flex-col md:flex-row items-center gap-3">
+          <div class="flex-1 relative w-full">
+            <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="searchInput" placeholder="Search by name, email, phone, type..."
+              class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-slate-50 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none focus:bg-white transition" />
           </div>
-        <% }) %>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <button data-filter="all" class="flt px-4 py-2.5 rounded-xl border text-sm font-semibold bg-indigo-600 text-white transition">All</button>
+            <button data-filter="custom" class="flt px-4 py-2.5 rounded-xl border text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">3D Orders</button>
+            <button data-filter="contact" class="flt px-4 py-2.5 rounded-xl border text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">Contact Form</button>
+          </div>
+        </div>
       </div>
+
+      <!-- Orders Table Card -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm" id="ordersTable">
+            <thead class="bg-slate-50 border-b border-gray-100 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
+              <tr>
+                <th class="text-left pl-6 pr-3 py-3.5">Order ID</th>
+                <th class="text-left px-3 py-3.5">Customer</th>
+                <th class="text-left px-3 py-3.5">Date</th>
+                <th class="text-left px-3 py-3.5">Type</th>
+                <th class="text-left px-3 py-3.5">Status</th>
+                <th class="text-right pr-6 px-3 py-3.5">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <% if ((inquiries||[]).length === 0) { %>
+              <tr>
+                <td colspan="6" class="text-center py-16 text-slate-400">
+                  <i class="bi bi-bag-check text-4xl block mb-3 opacity-40"></i>
+                  <span class="font-bold text-slate-500">No orders or inquiries recorded yet.</span>
+                </td>
+              </tr>
+              <% } %>
+              <% (inquiries||[]).forEach(function(i) {
+                const statusColors = {
+                  'Pending':    'bg-yellow-50 text-yellow-700 border border-yellow-200',
+                  'In Review':  'bg-blue-50 text-blue-700 border border-blue-200',
+                  'Quoted':     'bg-purple-50 text-purple-700 border border-purple-200',
+                  'Processing': 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+                  'Completed':  'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                  'Cancelled':  'bg-rose-50 text-rose-700 border border-rose-200',
+                };
+                const badgeCls = statusColors[i.status || 'Pending'] || 'bg-gray-50 text-gray-600 border border-gray-200';
+              %>
+              <tr class="border-b border-gray-50 hover:bg-slate-50/50 transition order-row"
+                  data-type="<%= i.type %>"
+                  data-search="<%= (i.name + ' ' + i.email + ' ' + (i.phone||'')).toLowerCase() %>">
+                <td class="pl-6 pr-3 py-4 font-bold text-slate-800">
+                  #<%= i._id.toString().slice(-6).toUpperCase() %>
+                </td>
+                <td class="px-3 py-4">
+                  <div class="font-bold text-slate-800"><%= i.name %></div>
+                  <div class="text-xs text-slate-400 font-medium mt-0.5"><%= i.email %></div>
+                  <% if (i.phone) { %><div class="text-xs text-slate-400"><%= i.phone %></div><% } %>
+                </td>
+                <td class="px-3 py-4 text-slate-500 text-xs font-medium">
+                  <%= new Date(i.createdAt).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                  <div class="text-slate-400 mt-0.5"><%= new Date(i.createdAt).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' }) %></div>
+                </td>
+                <td class="px-3 py-4">
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider
+                    <%= i.type === 'custom' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100' %>">
+                    <%= i.type === 'custom' ? '3D Order' : 'Contact' %>
+                  </span>
+                </td>
+                <td class="px-3 py-4">
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider <%= badgeCls %>">
+                    <%= i.status || 'Pending' %>
+                  </span>
+                </td>
+                <td class="pr-6 px-3 py-4">
+                  <div class="flex items-center justify-end gap-2">
+                    <a href="/admin/inquiries/<%= i._id %>"
+                       class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-slate-600 border border-gray-200 rounded-xl hover:bg-slate-50 transition">
+                      View Details <i class="bi bi-arrow-right"></i>
+                    </a>
+                    <% if (i.type === 'custom') { %>
+                    <a href="/admin/inquiries/<%= i._id %>/pdf" target="_blank"
+                       class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-red-600 border border-red-100 rounded-xl hover:bg-red-50 transition">
+                      <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+                    </a>
+                    <% } %>
+                    <button data-id="<%= i._id %>"
+                       class="del inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-rose-500 border border-rose-100 rounded-xl hover:bg-rose-50 transition">
+                       <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </main>
   </div>
+
+  <!-- Hidden data element -->
+  <div id="inquiriesData" data-inquiries="<%= JSON.stringify(inquiries || []) %>" class="hidden"></div>
 
   <script>
     const toast = (msg, type='success') => {
       const el = document.getElementById('toast');
       el.textContent = msg;
-      el.className = `fixed top-4 right-4 px-4 py-3 rounded-md text-white shadow-lg z-50 ${type==='success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
-      el.style.opacity = 0; el.style.display = 'block';
-      el.animate([{opacity:0},{opacity:1}],{duration:200});
-      setTimeout(()=>{ el.animate([{opacity:1},{opacity:0}],{duration:200}); setTimeout(()=>{ el.style.display='none'; },200); },1200);
+      el.className = `fixed top-4 right-4 px-4 py-3 rounded-xl text-white shadow-lg z-50 font-semibold text-sm ${type==='success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 3000);
     };
 
+    // Delete
     document.addEventListener('click', async (e) => {
       const btn = e.target.closest('button.del');
       if (!btn) return;
       const id = btn.getAttribute('data-id');
-      if (!confirm('Delete this inquiry?')) return;
+      if (!confirm('Delete this inquiry permanently?')) return;
       try {
         const res = await fetch(`/api/admin/inquiries/${id}`, { method: 'DELETE' });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error||'Delete failed');
-        location.reload();
+        if (!res.ok) throw new Error(data.error || 'Delete failed');
+        toast('Deleted successfully');
+        setTimeout(() => location.reload(), 800);
       } catch (err) {
-        toast(err.message||'Delete failed','error');
+        toast(err.message || 'Delete failed', 'error');
       }
     });
 
-    // Filtering
+    // Filter buttons
     document.querySelectorAll('button.flt').forEach(b => b.addEventListener('click', (e) => {
-      document.querySelectorAll('button.flt').forEach(x=>x.classList.remove('bg-indigo-600','text-white'));
-      e.currentTarget.classList.add('bg-indigo-600','text-white');
+      document.querySelectorAll('button.flt').forEach(x => {
+        x.classList.remove('bg-indigo-600', 'text-white');
+        x.classList.add('text-slate-600');
+      });
+      e.currentTarget.classList.add('bg-indigo-600', 'text-white');
+      e.currentTarget.classList.remove('text-slate-600');
       const f = e.currentTarget.getAttribute('data-filter');
-      document.querySelectorAll('#cards > div[data-type]').forEach(card => {
-        if (f==='all' || card.getAttribute('data-type')===f) card.style.display='';
-        else card.style.display='none';
+      document.querySelectorAll('.order-row').forEach(row => {
+        if (f === 'all' || row.getAttribute('data-type') === f) row.style.display = '';
+        else row.style.display = 'none';
       });
     }));
+
+    // Search
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      document.querySelectorAll('.order-row').forEach(row => {
+        const searchVal = row.getAttribute('data-search') || '';
+        row.style.display = searchVal.includes(q) ? '' : 'none';
+      });
+    });
   </script>
-</body>
-</html>
+
+<%- include('../partials/footer') %>

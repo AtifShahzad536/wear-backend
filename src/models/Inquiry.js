@@ -9,6 +9,11 @@ const InquirySchema = new mongoose.Schema(
     company: { type: String, default: '' },
     message: { type: String, default: '' },
     fileUrl: { type: String, default: '' },
+    modelUrl: { type: String, default: '' },
+    layersMetadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+    designConfig: { type: mongoose.Schema.Types.Mixed, default: {} },
+    status: { type: String, default: 'Pending', enum: ['Pending', 'In Review', 'Quoted', 'Processing', 'Completed', 'Cancelled'] },
+    admin_note: { type: String, default: '' },
   },
   { timestamps: true }
 );

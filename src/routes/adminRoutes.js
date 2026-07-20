@@ -8,6 +8,9 @@ import { Inquiry } from '../models/Inquiry.js';
 import fs from 'fs';
 import path from 'path';
 import { sendMail, isMailConfigured } from '../config/mail.js';
+import { BuilderModel } from '../models/BuilderModel.js';
+import { BuilderPattern } from '../models/BuilderPattern.js';
+import { BuilderLogo } from '../models/BuilderLogo.js';
 
 const router = Router();
 
@@ -259,6 +262,169 @@ router.get('/mail-test', async (req, res) => {
     res.json({ ok: true, message: 'Test email requested. Check inbox/spam.' });
   } catch (err) {
     res.status(500).json({ ok: false, error: err?.message || String(err) });
+  }
+});
+
+// Builder Models CRUD
+router.get('/builder-models', async (req, res) => {
+  const list = await BuilderModel.find({}).sort({ createdAt: -1 }).lean();
+  res.json(list);
+});
+
+router.post('/builder-models', upload.none(), async (req, res) => {
+  try {
+    const { category_id, name, model_url, thumbnail, mapping, layers_metadata, status } = req.body;
+    if (!category_id || !name || !model_url) {
+      return res.status(400).json({ error: 'category_id, name, and model_url are required' });
+    }
+    const parseJSON = (v) => {
+      if (!v) return {};
+      if (typeof v === 'string') {
+        try { return JSON.parse(v); } catch { return {}; }
+      }
+      return v;
+    };
+    const created = await BuilderModel.create({
+      category_id,
+      name,
+      model_url: normalizeImageUrl(model_url),
+      thumbnail: normalizeImageUrl(thumbnail),
+      mapping: parseJSON(mapping),
+      layers_metadata: parseJSON(layers_metadata),
+      status: status === 'false' ? false : true
+    });
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create builder model', details: err.message });
+  }
+});
+
+router.put('/builder-models/:id', upload.none(), async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    const parseJSON = (v) => {
+      if (!v) return {};
+      if (typeof v === 'string') {
+        try { return JSON.parse(v); } catch { return {}; }
+      }
+      return v;
+    };
+    if (updates.model_url) updates.model_url = normalizeImageUrl(updates.model_url);
+    if (updates.thumbnail) updates.thumbnail = normalizeImageUrl(updates.thumbnail);
+    if (updates.mapping) updates.mapping = parseJSON(updates.mapping);
+    if (updates.layers_metadata) updates.layers_metadata = parseJSON(updates.layers_metadata);
+    if (updates.status !== undefined) updates.status = updates.status === 'false' ? false : true;
+
+    const updated = await BuilderModel.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true }).lean();
+    if (!updated) return res.status(404).json({ error: 'Builder model not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update builder model', details: err.message });
+  }
+});
+
+router.post('/builder-models/:id/delete', upload.none(), async (req, res) => {
+  try {
+    const removed = await BuilderModel.findByIdAndDelete(req.params.id).lean();
+    if (!removed) return res.status(404).json({ error: 'Builder model not found' });
+    res.json(removed);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete builder model', details: err.message });
+  }
+});
+
+// Builder Patterns CRUD
+router.get('/builder-patterns', async (req, res) => {
+  const list = await BuilderPattern.find({}).sort({ createdAt: -1 }).lean();
+  res.json(list);
+});
+
+router.post('/builder-patterns', upload.none(), async (req, res) => {
+  try {
+    const { name, image_path, status } = req.body;
+    if (!name || !image_path) {
+      return res.status(400).json({ error: 'name and image_path are required' });
+    }
+    const created = await BuilderPattern.create({
+      name,
+      image_path: normalizeImageUrl(image_path),
+      status: status === 'false' ? false : true
+    });
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create builder pattern', details: err.message });
+  }
+});
+
+router.put('/builder-patterns/:id', upload.none(), async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    if (updates.image_path) updates.image_path = normalizeImageUrl(updates.image_path);
+    if (updates.status !== undefined) updates.status = updates.status === 'false' ? false : true;
+
+    const updated = await BuilderPattern.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true }).lean();
+    if (!updated) return res.status(404).json({ error: 'Builder pattern not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update builder pattern', details: err.message });
+  }
+});
+
+router.post('/builder-patterns/:id/delete', upload.none(), async (req, res) => {
+  try {
+    const removed = await BuilderPattern.findByIdAndDelete(req.params.id).lean();
+    if (!removed) return res.status(404).json({ error: 'Builder pattern not found' });
+    res.json(removed);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete builder pattern', details: err.message });
+  }
+});
+
+// Builder Logos CRUD
+router.get('/builder-logos', async (req, res) => {
+  const list = await BuilderLogo.find({}).sort({ createdAt: -1 }).lean();
+  res.json(list);
+});
+
+router.post('/builder-logos', upload.none(), async (req, res) => {
+  try {
+    const { name, category, image_path, status } = req.body;
+    if (!name || !image_path) {
+      return res.status(400).json({ error: 'name and image_path are required' });
+    }
+    const created = await BuilderLogo.create({
+      name,
+      category: category || 'MISC. LOGOS',
+      image_path: normalizeImageUrl(image_path),
+      status: status === 'false' ? false : true
+    });
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create builder logo', details: err.message });
+  }
+});
+
+router.put('/builder-logos/:id', upload.none(), async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    if (updates.image_path) updates.image_path = normalizeImageUrl(updates.image_path);
+    if (updates.status !== undefined) updates.status = updates.status === 'false' ? false : true;
+
+    const updated = await BuilderLogo.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true }).lean();
+    if (!updated) return res.status(404).json({ error: 'Builder logo not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update builder logo', details: err.message });
+  }
+});
+
+router.post('/builder-logos/:id/delete', upload.none(), async (req, res) => {
+  try {
+    const removed = await BuilderLogo.findByIdAndDelete(req.params.id).lean();
+    if (!removed) return res.status(404).json({ error: 'Builder logo not found' });
+    res.json(removed);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete builder logo', details: err.message });
   }
 });
 

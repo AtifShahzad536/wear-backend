@@ -7,9 +7,13 @@ import path from 'path';
 // Public: create a custom inquiry (optionally with uploaded file)
 export async function createCustomInquiry(req, res) {
   try {
-    const { name, email, phone = '', company = '', message = '', fileUrl = '' } = req.body || {};
+    const { name, email, phone = '', company = '', message = '', fileUrl = '', modelUrl = '', layersMetadata = {}, designConfig = {} } = req.body || {};
     if (!name || !email || !message) return res.status(400).json({ error: 'name, email, message required' });
     let storedFileUrl = fileUrl;
+    let parsedLayersMetadata = {};
+    let parsedDesignConfig = {};
+    try { parsedLayersMetadata = typeof layersMetadata === 'string' ? JSON.parse(layersMetadata) : layersMetadata; } catch(e) {}
+    try { parsedDesignConfig = typeof designConfig === 'string' ? JSON.parse(designConfig) : designConfig; } catch(e) {}
     let attachments = [];
     let inlineImgHtml = '';
     if (req.file) {
@@ -55,7 +59,7 @@ export async function createCustomInquiry(req, res) {
       }
     }
 
-    const doc = await Inquiry.create({ type: 'custom', name, email, phone, company, message, fileUrl: storedFileUrl });
+    const doc = await Inquiry.create({ type: 'custom', name, email, phone, company, message, fileUrl: storedFileUrl, modelUrl, layersMetadata: parsedLayersMetadata, designConfig: parsedDesignConfig });
     // Notify via email (if SMTP configured)
     await sendMail({
       subject: `New Custom Inquiry from ${name}`,

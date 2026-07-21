@@ -115,7 +115,7 @@ router.post('/categories/:slug/products', upload.none(), async (req, res) => {
   if (!id || !name) return res.status(400).json({ error: 'id and name are required' });
   const cat = await Category.findOne({ slug: req.params.slug });
   if (!cat) return res.status(404).json({ error: 'Category not found' });
-  if ((cat.products||[]).some(p => p.id === id)) return res.status(409).json({ error: 'Product id exists' });
+  if ((cat.products || []).some(p => p.id === id)) return res.status(409).json({ error: 'Product id exists' });
   const normalizedImage = normalizeImageUrl(image);
   const prod = { id, name, image: normalizedImage, description: description || '' };
   cat.products = cat.products || [];
@@ -127,7 +127,7 @@ router.post('/categories/:slug/products', upload.none(), async (req, res) => {
 router.put('/categories/:slug/products/:id', upload.none(), async (req, res) => {
   const cat = await Category.findOne({ slug: req.params.slug });
   if (!cat) return res.status(404).json({ error: 'Category not found' });
-  const idx = (cat.products||[]).findIndex(p => p.id === req.params.id);
+  const idx = (cat.products || []).findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Product not found' });
   const updates = { ...req.body };
   if (Object.prototype.hasOwnProperty.call(updates, 'image')) {
@@ -142,7 +142,7 @@ router.put('/categories/:slug/products/:id', upload.none(), async (req, res) => 
 router.post('/categories/:slug/products/:id', upload.none(), async (req, res) => {
   const cat = await Category.findOne({ slug: req.params.slug });
   if (!cat) return res.status(404).json({ error: 'Category not found' });
-  const idx = (cat.products||[]).findIndex(p => p.id === req.params.id);
+  const idx = (cat.products || []).findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Product not found' });
   const updates = { ...req.body };
   if (Object.prototype.hasOwnProperty.call(updates, 'image')) {
@@ -156,7 +156,7 @@ router.post('/categories/:slug/products/:id', upload.none(), async (req, res) =>
 router.delete('/categories/:slug/products/:id', upload.none(), async (req, res) => {
   const cat = await Category.findOne({ slug: req.params.slug });
   if (!cat) return res.status(404).json({ error: 'Category not found' });
-  const idx = (cat.products||[]).findIndex(p => p.id === req.params.id);
+  const idx = (cat.products || []).findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Product not found' });
   const [removed] = cat.products.splice(idx, 1);
   await cat.save();
@@ -167,7 +167,7 @@ router.delete('/categories/:slug/products/:id', upload.none(), async (req, res) 
 router.post('/categories/:slug/products/:id/delete', upload.none(), async (req, res) => {
   const cat = await Category.findOne({ slug: req.params.slug });
   if (!cat) return res.status(404).json({ error: 'Category not found' });
-  const idx = (cat.products||[]).findIndex(p => p.id === req.params.id);
+  const idx = (cat.products || []).findIndex(p => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Product not found' });
   const [removed] = cat.products.splice(idx, 1);
   await cat.save();

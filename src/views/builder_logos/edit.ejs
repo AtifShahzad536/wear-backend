@@ -1,113 +1,66 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Edit Builder Logo • WearConnect</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 text-gray-800">
-  <div class="min-h-screen grid grid-cols-12">
-    <!-- Sidebar -->
-    <aside class="col-span-12 md:col-span-3 lg:col-span-2 bg-white border-r p-4 space-y-2">
-      <div class="flex items-center gap-2 mb-2">
-        <div class="w-2 h-6 bg-indigo-600 rounded"></div>
-        <h1 class="text-xl font-bold text-indigo-600">WearConnect Admin</h1>
-      </div>
-      <nav class="mt-4 space-y-1 text-sm">
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin">Dashboard</a>
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/categories">Categories</a>
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/uploads">Uploads</a>
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/inquiries">Inquiries</a>
-        
-        <div class="mt-3 text-xs uppercase tracking-wide text-gray-400 px-3">Customizer</div>
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/builder-models">Builder Models</a>
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/builder-patterns">Builder Patterns</a>
-        <a class="block px-3 py-2 rounded bg-indigo-50 text-indigo-700 font-medium" href="/admin/builder-logos">Builder Logos</a>
-      </nav>
-    </aside>
+<%- include('../partials/header', { title: 'Edit Logo' }) %>
+<%- include('../partials/sidebar', { activePage: 'logos' }) %>
 
-    <!-- Main Content -->
-    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6">
-      <div class="mb-6 flex items-center justify-between">
-        <h2 class="text-2xl font-semibold">Edit Builder Logo: <%= logo.name %></h2>
-        <a href="/admin/builder-logos" class="px-4 py-2 border rounded hover:bg-gray-50 text-sm">Back</a>
-      </div>
-
-      <div class="bg-white border rounded-2xl p-6 max-w-xl shadow-sm">
-        <form action="/api/admin/builder-logos/<%= logo._id %>" method="POST" class="space-y-6">
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Logo Name</label>
-            <input type="text" name="name" value="<%= logo.name %>" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
-          </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Category (e.g. BRANDS, SHIELD, MISC. LOGOS)</label>
-            <input type="text" name="category" value="<%= logo.category %>" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
-          </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Logo Image Path</label>
-            <div class="flex gap-2">
-              <input type="text" id="image_path" name="image_path" value="<%= logo.image_path %>" class="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
-              <button type="button" onclick="triggerUpload('image_path', 'image/*')" class="px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold uppercase transition">Upload</button>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <input type="checkbox" name="status" id="status" value="true" <%= logo.status ? 'checked' : '' %> class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-            <label for="status" class="text-sm text-gray-700 font-medium">Active (visible in Customizer)</label>
-          </div>
-
-          <div class="flex justify-end">
-            <button type="submit" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 shadow-md hover:-translate-y-0.5 transition">Save Changes</button>
-          </div>
-        </form>
-      </div>
-    </main>
+<main class="col-span-12 md:col-span-9 lg:col-span-10 space-y-6">
+  <div class="flex items-center justify-between border-b border-slate-200/80 pb-4">
+    <h1 class="text-2xl font-extrabold text-slate-900">Edit Builder Logo: <%= logo.name %></h1>
+    <a href="/admin/builder-logos" class="text-xs font-bold text-slate-600 border border-slate-200 px-3 py-2 rounded-xl hover:bg-slate-100">Cancel</a>
   </div>
 
-  <input type="file" id="hiddenFileInput" class="hidden" />
+  <div class="bg-white border border-slate-200/80 rounded-2xl p-6 max-w-xl shadow-sm">
+    <form action="/api/admin/builder-logos/<%= logo._id %>" method="POST" class="space-y-5">
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Logo Name</label>
+        <input type="text" name="name" required value="<%= logo.name %>" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+      </div>
 
-  <script>
-    let activeFieldId = '';
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category</label>
+        <input type="text" name="category" value="<%= logo.category %>" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+      </div>
 
-    function triggerUpload(fieldId, acceptTypes) {
-      activeFieldId = fieldId;
-      const fileInput = document.getElementById('hiddenFileInput');
-      fileInput.accept = acceptTypes;
-      fileInput.value = '';
-      fileInput.click();
-    }
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Logo Image Path</label>
+        <div class="flex gap-2">
+          <input type="text" id="image_path" name="image_path" required value="<%= logo.image_path %>" class="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          <button type="button" onclick="triggerUpload('image_path')" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">Upload File</button>
+        </div>
+      </div>
 
-    document.getElementById('hiddenFileInput').addEventListener('change', async (e) => {
+      <div class="flex items-center gap-2">
+        <input type="checkbox" name="status" id="status" value="true" <%= logo.status ? 'checked' : '' %> class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+        <label for="status" class="text-xs font-bold text-slate-700">Active (visible in Customizer)</label>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<input type="file" id="hiddenFileInput" class="hidden" accept="image/*" />
+
+<script>
+  function triggerUpload(fieldId) {
+    const fileInput = document.getElementById('hiddenFileInput');
+    fileInput.onchange = async (e) => {
       const file = e.target.files[0];
-      if (!file || !activeFieldId) return;
-
+      if (!file) return;
       const formData = new FormData();
       formData.append('file', file);
-
-      const btn = document.querySelector(`button[onclick*="${activeFieldId}"]`);
-      const originalText = btn.textContent;
-      btn.textContent = 'Uploading...';
-      btn.disabled = true;
-
       try {
-        const res = await fetch('/api/admin/upload', {
-          method: 'POST',
-          body: formData
-        });
+        const res = await fetch('/api/admin/upload', { method: 'POST', body: formData });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Upload failed');
-
-        document.getElementById(activeFieldId).value = data.url;
+        document.getElementById(fieldId).value = data.url;
+        showToast('Logo file updated!');
       } catch (err) {
         alert(err.message || 'File upload failed');
-      } finally {
-        btn.textContent = originalText;
-        btn.disabled = false;
       }
-    });
-  </script>
-</body>
-</html>
+    };
+    fileInput.click();
+  }
+</script>
+
+<%- include('../partials/footer') %>

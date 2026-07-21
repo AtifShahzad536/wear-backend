@@ -1,6 +1,6 @@
 import { Inquiry } from '../models/Inquiry.js';
 import { sendMail } from '../config/mail.js';
-import { uploadToCloudinary, isCloudinaryConfigured } from '../config/cloudinary.js';
+import { uploadToCloudinary, uploadBase64ToCloudinary, isCloudinaryConfigured } from '../config/cloudinary.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -12,8 +12,32 @@ export async function createCustomInquiry(req, res) {
     let storedFileUrl = fileUrl;
     let parsedLayersMetadata = {};
     let parsedDesignConfig = {};
-    try { parsedLayersMetadata = typeof layersMetadata === 'string' ? JSON.parse(layersMetadata) : layersMetadata; } catch(e) {}
-    try { parsedDesignConfig = typeof designConfig === 'string' ? JSON.parse(designConfig) : designConfig; } catch(e) {}
+    try { 
+      parsedLayersMetadata = typeof layersMetadata === 'string' ? JSON.parse(layersMetadata) : (layersMetadata || {}); 
+    } catch(e) {}
+    try { 
+      parsedDesignConfig = typeof designConfig === 'string' ? JSON.parse(designConfig) : (designConfig || {}); 
+    } catch(e) {}
+
+    // Automatically upload 5-angle model snapshots to Cloudinary
+    if (parsedDesignConfig && parsedDesignConfig.snapshots && isCloudinaryConfigured()) {
+      const snaps = parsedDesignConfig.snapshots;
+      const angles = ['front', 'back', 'left', 'right', 'top'];
+      for (const angle of angles) {
+        if (snaps[angle] && snaps[angle].startsWith('data:image/')) {
+          try {
+            const cloudUrl = await uploadBase64ToCloudinary(snaps[angle], { folder: 'wearconnect/snapshots' });
+            if (cloudUrl) {
+              snaps[angle] = cloudUrl;
+              console.log(`[Cloudinary] Saved snapshot '${angle}':`, cloudUrl);
+            }
+          } catch (e) {
+            console.warn(`[Cloudinary] Failed snapshot '${angle}':`, e?.message || e);
+          }
+        }
+      }
+      if (snaps.front) storedFileUrl = snaps.front;
+    }
     let attachments = [];
     let inlineImgHtml = '';
     if (req.file) {

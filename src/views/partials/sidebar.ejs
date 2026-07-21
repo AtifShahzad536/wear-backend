@@ -1,73 +1,30 @@
 <%
-  // Helper to check if a route is active
-  const isActive = (item) => typeof activePage !== 'undefined' && activePage === item;
+  const page = typeof activePage !== 'undefined' ? activePage : '';
+  const navItems = [
+    { key: 'dashboard', label: 'Dashboard', url: '/admin', icon: 'bi-grid-1x2-fill' },
+    { key: 'categories', label: 'Categories', url: '/admin/categories', icon: 'bi-folder-fill' },
+    { key: 'products', label: 'All Products', url: '/admin/products', icon: 'bi-box-seam-fill' },
+    { key: 'inquiries', label: 'Orders & Inquiries', url: '/admin/inquiries', icon: 'bi-chat-square-quote-fill' },
+    { key: 'models', label: '3D Builder Models', url: '/admin/builder-models', icon: 'bi-bounding-box-circles' },
+    { key: 'patterns', label: '3D Patterns', url: '/admin/builder-patterns', icon: 'bi-grid-3x3-gap-fill' },
+    { key: 'logos', label: '3D Logos', url: '/admin/builder-logos', icon: 'bi-badge-ad-fill' },
+    { key: 'uploads', label: 'Uploads Library', url: '/admin/uploads', icon: 'bi-images' },
+  ];
 %>
-<!-- Sidebar Section -->
-<aside id="adminSidebar" class="col-span-12 md:col-span-3 lg:col-span-2 bg-white border-r border-slate-100 p-4 space-y-6 flex flex-col justify-between hidden md:flex min-h-[calc(100vh-4rem)]">
-  
-  <div class="space-y-6">
-    <!-- Main Links Group -->
-    <div class="space-y-1">
-      <span class="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 block mb-2">Core Panel</span>
-      
-      <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 <%= isActive('dashboard') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' %>" href="/admin">
-        <i class="bi bi-speedometer2 text-sm"></i> Dashboard
-      </a>
 
-      <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 <%= isActive('categories') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' %>" href="/admin/categories">
-        <i class="bi bi-grid-3x3-gap text-sm"></i> Categories
-      </a>
-
-      <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 <%= isActive('uploads') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' %>" href="/admin/uploads">
-        <i class="bi bi-cloud-arrow-up text-sm"></i> Media Uploads
-      </a>
-
-      <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 <%= isActive('inquiries') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' %>" href="/admin/inquiries">
-        <i class="bi bi-chat-right-text text-sm"></i> Inquiries
-      </a>
-    </div>
-
-    <!-- Customizer Configuration Dropdown -->
-    <div class="space-y-1">
-      <span class="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 block mb-2">3D Customizer</span>
-      
-      <a class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 <%= isActive('models') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' %>" href="/admin/builder-models">
-        <i class="bi bi-box text-sm"></i> Builder Models
-      </a>
-      
-      <a class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 <%= isActive('patterns') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' %>" href="/admin/builder-patterns">
-        <i class="bi bi-palette2 text-sm"></i> Patterns
-      </a>
-      
-      <a class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 <%= isActive('logos') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' %>" href="/admin/builder-logos">
-        <i class="bi bi-shield-check text-sm"></i> Logos
-      </a>
-    </div>
-
-    <!-- Home Page Editor Dropdown -->
-    <div class="space-y-1">
-      <span class="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 block mb-2">Home Editor</span>
-      
-      <a class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 <%= isActive('home-hero') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' %>" href="/admin/home/hero">
-        <i class="bi bi-card-image text-sm"></i> Hero Slider
-      </a>
-      
-      <a class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 <%= isActive('home-testimonials') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' %>" href="/admin/home/testimonials">
-        <i class="bi bi-quote text-sm"></i> Testimonials
-      </a>
-      
-      <a class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 <%= isActive('home-top') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' %>" href="/admin/home/top-selling">
-        <i class="bi bi-star text-sm"></i> Top Selling
-      </a>
-    </div>
-  </div>
-
-  <!-- Bottom Panel Info -->
-  <div class="pt-6 border-t border-slate-100 flex flex-col gap-2">
-    <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-      Version 2.0-DARK
-    </div>
-    <span class="text-[8px] font-semibold text-slate-300">© 2026 ZARKO SPORTSWEAR</span>
+<aside class="col-span-12 md:col-span-3 lg:col-span-2">
+  <div class="bg-white border border-slate-200/80 rounded-2xl p-3 sticky top-24 shadow-sm space-y-1">
+    <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-3 mb-2">Main Menu</div>
+    <nav class="flex flex-col gap-1">
+      <% navItems.forEach(item => { 
+        const isActive = page === item.key;
+      %>
+        <a href="<%= item.url %>"
+           class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold text-xs transition <%= isActive ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' %>">
+          <i class="bi <%= item.icon %> text-sm"></i>
+          <span><%= item.label %></span>
+        </a>
+      <% }) %>
+    </nav>
   </div>
 </aside>

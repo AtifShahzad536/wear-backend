@@ -11,16 +11,44 @@ const router = Router();
 router.get('/', async (req, res) => {
   const cats = await Category.find({}).lean();
   const totalProducts = cats.reduce((sum, c) => sum + (c.products?.length || 0), 0);
-  // take last 8 products by array order across categories
+  const totalInquiries = await Inquiry.countDocuments();
+  const totalModels = await BuilderModel.countDocuments();
+  
+  // recent inquiries
+  const recentInquiries = await Inquiry.find({}).sort({ createdAt: -1 }).limit(5).lean();
+
   const recentProducts = cats
     .flatMap(c => (c.products || []).map(p => ({ ...p, category: c.slug, categoryName: c.name })))
     .slice(-8)
     .reverse();
+
   res.render('dashboard', {
     title: 'Admin Dashboard',
-    stats: { categories: cats.length, products: totalProducts },
+    stats: { 
+      categories: cats.length, 
+      products: totalProducts,
+      inquiries: totalInquiries,
+      models: totalModels
+    },
     recentProducts,
+    recentInquiries
   });
+});
+
+// All Products View (Separate Page)
+router.get('/products', async (req, res) => {
+  try {
+    const cats = await Category.find({}).lean();
+    const allProducts = cats.flatMap(c => (c.products || []).map(p => ({
+      ...p,
+      categorySlug: c.slug,
+      categoryName: c.name
+    })));
+    res.render('products/all', { title: 'All Products', products: allProducts, categories: cats });
+  } catch (err) {
+    console.error('Error rendering all products page:', err);
+    res.status(500).send('Error loading products page: ' + err.message);
+  }
 });
 
 // Categories
@@ -84,6 +112,11 @@ router.get('/inquiries/:id/pdf', async (req, res) => {
   try {
     const inquiry = await Inquiry.findById(req.params.id).lean();
     if (!inquiry) return res.status(404).send('Inquiry not found');
+    if (typeof inquiry.designConfig === 'string') {
+      try {
+        inquiry.designConfig = JSON.parse(inquiry.designConfig);
+      } catch (e) {}
+    }
     res.render('inquiries/pdf', { title: `PDF Invoice — ${inquiry.name}`, inquiry });
   } catch (err) {
     res.status(500).send('Server Error');

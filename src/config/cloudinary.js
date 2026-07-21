@@ -53,4 +53,19 @@ export function uploadToCloudinary(file, { folder = 'wearconnect/uploads', resou
   return Promise.reject(new Error('File has no buffer or path for Cloudinary upload'));
 }
 
+export function uploadBase64ToCloudinary(base64Data, { folder = 'wearconnect/snapshots' } = {}) {
+  if (!base64Data || typeof base64Data !== 'string') {
+    return Promise.resolve('');
+  }
+  if (!isCloudinaryConfigured()) {
+    return Promise.resolve('');
+  }
+  return cloudinary.uploader.upload(base64Data, { folder, resource_type: 'image' })
+    .then(result => result.secure_url || '')
+    .catch(err => {
+      console.error('[Cloudinary] Base64 upload failed:', err?.message || err);
+      return '';
+    });
+}
+
 export default cloudinary;

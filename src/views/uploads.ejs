@@ -1,52 +1,71 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Uploads • WearConnect</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 text-gray-800">
-  <div class="min-h-screen grid grid-cols-12">
-    <aside class="col-span-12 md:col-span-3 lg:col-span-2 bg-white border-r p-4 space-y-2">
-      <h1 class="text-xl font-bold text-indigo-600">WearConnect Admin</h1>
-      <nav class="mt-4 space-y-1">
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin">Dashboard</a>
-        <a class="block px-3 py-2 rounded hover:bg-gray-100" href="/admin/categories">Categories</a>
-        <a class="block px-3 py-2 rounded bg-gray-100" href="/admin/uploads">Uploads</a>
-      </nav>
-    </aside>
-    <main class="col-span-12 md:col-span-9 lg:col-span-10 p-6">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-semibold">Uploads</h2>
-      </div>
+<%- include('./partials/header', { title: 'Uploads' }) %>
+<%- include('./partials/sidebar', { activePage: 'uploads' }) %>
 
-      <form action="/api/admin/upload" method="post" enctype="multipart/form-data" class="bg-white border rounded p-5 max-w-xl space-y-4">
-        <div>
-          <label class="block text-sm text-gray-600 mb-1">Select file</label>
-          <input required type="file" name="file" class="w-full" />
-        </div>
-        <button class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Upload</button>
-      </form>
-
-      <div class="mt-6 text-sm text-gray-500">
-        Uploaded files are served at <code>/uploads/&lt;filename&gt;</code>.
-      </div>
-    </main>
+<main class="col-span-12 md:col-span-9 lg:col-span-10 space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Uploads Media Library</h1>
+      <p class="text-sm text-slate-500 mt-1">Browse, upload, and copy URLs of media assets.</p>
+    </div>
+    <button onclick="document.getElementById('uploadInput').click()" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition">
+      <i class="bi bi-cloud-arrow-up-fill"></i> Upload Media
+    </button>
+    <input type="file" id="uploadInput" multiple accept="image/*" class="hidden" />
   </div>
-</body>
-</html>
+
+  <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    <!-- Loaded dynamically -->
+  </div>
+</main>
 
 <script>
-  (function(){
-    var IDLE_MS = 1 * 60 * 1000; // 1 minute (test)
-    var t;
-    function clearAuth(){ try { document.cookie = 'token=; Max-Age=0; path=/'; } catch(e){} }
-    function logout(){ clearAuth(); window.location.replace('/admin/login?idle=1'); }
-    function reset(){ if (t) clearTimeout(t); t = setTimeout(logout, IDLE_MS); }
-    ['mousemove','keydown','click','touchstart','scroll','visibilitychange'].forEach(function(ev){
-      window.addEventListener(ev, reset, { passive: true });
-    });
-    reset();
-  })();
+  async function loadUploads() {
+    try {
+      const res = await fetch('/api/admin/uploads');
+      const files = await res.json();
+      const grid = document.getElementById('mediaGrid');
+      grid.innerHTML = '';
+      if (!files || files.length === 0) {
+        grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 font-bold">No uploads found</div>';
+        return;
+      }
+      files.forEach(f => {
+        const html = `
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-2 shadow-sm flex flex-col justify-between group">
+            <div class="h-28 bg-slate-50 rounded-xl overflow-hidden relative border border-slate-100">
+              <img src="${f.url}" alt="${f.name}" class="w-full h-full object-cover group-hover:scale-105 transition" />
+            </div>
+            <div class="mt-2 space-y-1">
+              <p class="text-[11px] font-bold text-slate-700 truncate" title="${f.name}">${f.name}</p>
+              <button onclick="copyUrl('${f.url}')" class="w-full text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 py-1 rounded-lg transition">Copy URL</button>
+            </div>
+          </div>
+        `;
+        grid.insertAdjacentHTML('beforeend', html);
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function copyUrl(url) {
+    navigator.clipboard.writeText(url);
+    showToast('URL copied to clipboard!');
+  }
+
+  document.getElementById('uploadInput').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    for (const f of files) {
+      const form = new FormData();
+      form.append('file', f);
+      await fetch('/api/admin/upload', { method: 'POST', body: form });
+    }
+    showToast('Upload complete!');
+    loadUploads();
+  });
+
+  loadUploads();
 </script>
+
+<%- include('./partials/footer') %>

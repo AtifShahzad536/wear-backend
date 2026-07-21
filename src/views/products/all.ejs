@@ -1,0 +1,198 @@
+<%- include('../partials/header', { title: 'All Products' }) %>
+<%- include('../partials/sidebar', { activePage: 'products' }) %>
+
+<main class="col-span-12 md:col-span-9 lg:col-span-10 space-y-6">
+  <!-- Page Title & Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">All Sportswear Products</h1>
+      <p class="text-sm text-slate-500 mt-1">Manage and edit all catalog gear across categories.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <select id="categoryFilter" onchange="filterProducts()" class="bg-white border border-slate-200 font-bold text-xs rounded-xl px-3.5 py-2.5 text-slate-700 focus:outline-none">
+        <option value="ALL">All Categories</option>
+        <% (categories||[]).forEach(c => { %>
+          <option value="<%= c.slug %>"><%= c.name %></option>
+        <% }) %>
+      </select>
+
+      <!-- Add Product Modal Trigger Button -->
+      <button onclick="openAddModal()" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition">
+        <i class="bi bi-plus-lg"></i> Add Product
+      </button>
+    </div>
+  </div>
+
+  <!-- Search Filter Input -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 p-3 shadow-sm">
+    <div class="relative">
+      <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <input type="text" id="searchInput" onkeyup="filterProducts()" placeholder="Search product by name or ID..."
+        class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+    </div>
+  </div>
+
+  <!-- Products Grid -->
+  <% if ((products||[]).length > 0) { %>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5" id="productsGrid">
+      <% products.forEach(p => { %>
+        <div class="product-card bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between group"
+             data-category="<%= p.categorySlug %>"
+             data-search="<%= (p.name + ' ' + p.id).toLowerCase() %>">
+          <div>
+            <div class="h-44 bg-slate-50 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
+              <% if (p.image) { %>
+                <img src="<%= p.image %>" alt="<%= p.name %>" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+              <% } else { %>
+                <span class="text-slate-300 text-xs font-bold">No Image</span>
+              <% } %>
+              <span class="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-mono px-2 py-0.5 rounded-md font-bold">
+                <%= p.id %>
+              </span>
+              <span class="absolute top-2 right-2 bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase">
+                <%= p.categoryName || p.categorySlug %>
+              </span>
+            </div>
+            <div class="p-4 space-y-1">
+              <h3 class="font-bold text-slate-900 text-sm group-hover:text-indigo-600 transition"><%= p.name %></h3>
+              <p class="text-xs text-slate-500 line-clamp-2"><%= p.description || 'No description' %></p>
+            </div>
+          </div>
+          <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <a href="/admin/categories/<%= p.categorySlug %>/products/<%= p.id %>/edit" class="text-xs font-bold text-indigo-600 hover:underline">Edit Product</a>
+            <form action="/api/admin/categories/<%= p.categorySlug %>/products/<%= p.id %>/delete" method="POST" onsubmit="return confirm('Delete product <%= p.name %>?')">
+              <button type="submit" class="text-xs font-bold text-rose-600 hover:underline">Delete</button>
+            </form>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-12 text-center space-y-3">
+      <i class="bi bi-box-seam text-4xl text-slate-300 block"></i>
+      <h3 class="font-bold text-slate-700">No products found in catalog</h3>
+      <p class="text-xs text-slate-400">Click "+ Add Product" button above to create items.</p>
+    </div>
+  <% } %>
+</main>
+
+<!-- Add Product Modal -->
+<div id="addProductModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+  <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <h2 class="text-lg font-extrabold text-slate-900">Add New Product</h2>
+      <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 text-sm font-bold">✕</button>
+    </div>
+    <form id="newProductModalForm" class="space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Category</label>
+        <select id="modalCategory" required class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <% (categories||[]).forEach(c => { %>
+            <option value="<%= c.slug %>"><%= c.name %> (<%= c.slug %>)</option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Product ID (Unique)</label>
+        <input type="text" id="modalId" required placeholder="e.g. fb-kit-01" class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Product Name</label>
+        <input type="text" id="modalName" required placeholder="e.g. Pro Soccer Jersey" class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Image URL / File Upload</label>
+        <div class="flex gap-2">
+          <input type="text" id="modalImage" placeholder="/uploads/item.jpg or https://..." class="flex-1 rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <button type="button" onclick="document.getElementById('modalFileInput').click()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">Upload</button>
+          <input type="file" id="modalFileInput" accept="image/*" class="hidden" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Description</label>
+        <textarea id="modalDesc" rows="3" placeholder="Product details & materials..." class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" onclick="closeAddModal()" class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+        <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md">Save Product</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openAddModal() {
+    const modal = document.getElementById('addProductModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeAddModal() {
+    const modal = document.getElementById('addProductModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  document.getElementById('modalFileInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      document.getElementById('modalImage').value = data.url;
+      showToast('Image file uploaded!');
+    } catch (err) {
+      alert(err.message || 'File upload failed');
+    }
+  });
+
+  document.getElementById('newProductModalForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const slug = document.getElementById('modalCategory').value;
+    const id = document.getElementById('modalId').value.trim();
+    const name = document.getElementById('modalName').value.trim();
+    const image = document.getElementById('modalImage').value.trim();
+    const description = document.getElementById('modalDesc').value.trim();
+
+    try {
+      const res = await fetch(`/api/admin/categories/${encodeURIComponent(slug)}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name, image, description })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create product');
+
+      showToast('Product created successfully!');
+      setTimeout(() => { location.reload(); }, 800);
+    } catch (err) {
+      alert(err.message || 'Error creating product');
+    }
+  });
+
+  function filterProducts() {
+    const cat = document.getElementById('categoryFilter').value;
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('.product-card');
+
+    cards.forEach(card => {
+      const matchCat = (cat === 'ALL' || card.getAttribute('data-category') === cat);
+      const matchSearch = card.getAttribute('data-search').includes(q);
+      if (matchCat && matchSearch) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+</script>
+
+<%- include('../partials/footer') %>

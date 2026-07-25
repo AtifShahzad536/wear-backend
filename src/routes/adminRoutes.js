@@ -32,6 +32,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
     if (!isCloudinaryConfigured()) {
+      if (process.env.VERCEL === '1') {
+        return res.status(400).json({ error: 'Cloudinary environment variables (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) are not configured on Vercel.' });
+      }
       const fileUrl = req.file.filename ? `/uploads/${req.file.filename}` : '';
       console.log('[Admin Upload] Cloudinary not configured, using local path', { fileUrl, filename: req.file.filename });
       return res.status(200).json({ url: fileUrl, filename: req.file.filename || '' });

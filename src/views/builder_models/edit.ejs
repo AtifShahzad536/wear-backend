@@ -136,19 +136,44 @@
       btn.textContent = 'Uploading...';
       btn.disabled = true;
 
+      if (typeof showToast === 'function') {
+        showToast('Uploading file to Cloudinary...', 'info');
+      }
+
       try {
         const res = await fetch('/api/admin/upload', {
           method: 'POST',
           body: formData
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Upload failed');
+        
+        let data;
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          data = await res.json();
+        }
+        
+        if (!res.ok) {
+          throw new Error((data && data.error) || `Upload failed with status ${res.status}`);
+        }
+        
+        if (!data || !data.url) {
+          throw new Error('Upload succeeded but no URL was returned');
+        }
 
         const urlInput = document.getElementById(activeFieldId);
         urlInput.value = data.url;
         urlInput.dispatchEvent(new Event('change')); // Trigger auto parsing if GLB URL
+        
+        if (typeof showToast === 'function') {
+          showToast('File uploaded successfully!', 'success');
+        }
       } catch (err) {
-        alert(err.message || 'File upload failed');
+        console.error(err);
+        if (typeof showToast === 'function') {
+          showToast(err.message || 'File upload failed', 'error');
+        } else {
+          alert(err.message || 'File upload failed');
+        }
       } finally {
         btn.textContent = originalText;
         btn.disabled = false;

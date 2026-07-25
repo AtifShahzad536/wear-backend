@@ -302,12 +302,12 @@
       renderer.physicallyCorrectLights = true;
       container.appendChild(renderer.domElement);
 
-      // HDRi Environment - use Poly Haven CDN (reliable public HDR)
+      // HDRi Environment - neutral white studio (no warm colour cast)
       const pmremGenerator = new THREE.PMREMGenerator(renderer);
       pmremGenerator.compileEquirectangularShader();
       try {
         new THREE.RGBELoader().load(
-          'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr',
+          'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/neutral.hdr',
           function(texture) {
             const envMap = pmremGenerator.fromEquirectangular(texture).texture;
             scene.environment = envMap;
@@ -316,7 +316,9 @@
           },
           undefined,
           function() {
-            // HDR failed to load — fall back to plain color environment (no crash)
+            // neutral.hdr not found — fall back to a pure white scene environment
+            const neutralEnv = pmremGenerator.fromScene(new THREE.RoomEnvironment()).texture;
+            scene.environment = neutralEnv;
             pmremGenerator.dispose();
           }
         );
@@ -375,12 +377,14 @@
             if (state) {
               const mat = node.material.clone();
               mat.userData.uniforms = {
-                uColor: { value: new THREE.Color(state.color || '#ffffff').convertSRGBToLinear() },
+                // Colors: stored as plain sRGB hex - do NOT call convertSRGBToLinear(),
+                // the renderer's outputEncoding=sRGBEncoding handles the final conversion.
+                uColor: { value: new THREE.Color(state.color || '#ffffff') },
                 uIsGradient: { value: state.isGrad ? 1.0 : 0.0 },
-                uColor1: { value: new THREE.Color(state.grad1 || '#ffffff').convertSRGBToLinear() },
-                uColor2: { value: new THREE.Color(state.grad2 || '#ffffff').convertSRGBToLinear() },
+                uColor1: { value: new THREE.Color(state.grad1 || '#ffffff') },
+                uColor2: { value: new THREE.Color(state.grad2 || '#ffffff') },
                 uHasPattern: { value: 0.0 },
-                uPatternColor: { value: new THREE.Color(state.pColor || '#ffffff').convertSRGBToLinear() },
+                uPatternColor: { value: new THREE.Color(state.pColor || '#ffffff') },
                 uPatternTexture: { value: whiteTex },
                 uPatternType: { value: 0.0 },
                 uMinY: { value: 0 },

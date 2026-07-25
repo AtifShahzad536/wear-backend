@@ -6,7 +6,6 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/meshoptimizer@0.18.1/meshopt_decoder.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/DecalGeometry.js"></script>
 
@@ -297,47 +296,29 @@
       renderer.setSize(container.clientWidth, container.clientHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.outputEncoding = THREE.sRGBEncoding;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.35;
+      // Use LinearToneMapping so colours are NOT shifted by ACES curve — gives accurate colour match
+      renderer.toneMapping = THREE.LinearToneMapping;
+      renderer.toneMappingExposure = 1.0;
       renderer.physicallyCorrectLights = true;
       container.appendChild(renderer.domElement);
 
-      // HDRi Environment - neutral white studio (no warm colour cast)
-      const pmremGenerator = new THREE.PMREMGenerator(renderer);
-      pmremGenerator.compileEquirectangularShader();
-      try {
-        new THREE.RGBELoader().load(
-          'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/neutral.hdr',
-          function(texture) {
-            const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-            scene.environment = envMap;
-            texture.dispose();
-            pmremGenerator.dispose();
-          },
-          undefined,
-          function() {
-            // neutral.hdr not found — fall back to a pure white scene environment
-            const neutralEnv = pmremGenerator.fromScene(new THREE.RoomEnvironment()).texture;
-            scene.environment = neutralEnv;
-            pmremGenerator.dispose();
-          }
-        );
-      } catch(e) {
-        pmremGenerator.dispose();
-      }
+      // No HDR environment — use manual neutral white lights for colour accuracy.
+      // (THREE.RGBELoader + remote HDRs caused 404 errors and warm colour tinting)
+      scene.environment = null;
 
-      // Lighting
+      // Lighting — pure white lights so mesh colours appear exactly as designed
       const isNight = lightingPreset === 'night';
       const isStudio = lightingPreset === 'studio';
-      scene.add(new THREE.AmbientLight('#ffffff', isNight ? 0.3 : 1.2));
-      var spotLight = new THREE.SpotLight('#ffffff', isStudio ? 3.0 : 2.2);
-      spotLight.position.set(10, 15, 10);
-      spotLight.angle = 0.3;
-      spotLight.penumbra = 1;
-      scene.add(spotLight);
-      var dirLight = new THREE.DirectionalLight('#ffffff', isNight ? 0.15 : 0.8);
-      dirLight.position.set(-5, 5, -5);
-      scene.add(dirLight);
+      scene.add(new THREE.AmbientLight('#ffffff', isNight ? 0.5 : 1.8));
+      var frontLight = new THREE.DirectionalLight('#ffffff', isNight ? 0.4 : 1.2);
+      frontLight.position.set(0, 2, 4);
+      scene.add(frontLight);
+      var topLight = new THREE.DirectionalLight('#ffffff', isNight ? 0.2 : 0.6);
+      topLight.position.set(0, 8, 0);
+      scene.add(topLight);
+      var backLight = new THREE.DirectionalLight('#ffffff', isNight ? 0.1 : 0.3);
+      backLight.position.set(0, 1, -4);
+      scene.add(backLight);
 
       const controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;

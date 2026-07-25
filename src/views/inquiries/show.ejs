@@ -381,16 +381,23 @@
 
               mat.onBeforeCompile = function(shader) {
                 Object.assign(shader.uniforms, mat.userData.uniforms);
+
+                // Detect whether THREE already declares vUv (happens when USE_UV / USE_MAP is defined)
+                const hasBuiltinVUv = shader.vertexShader.includes('varying vec2 vUv');
+                const vUvVertDecl   = hasBuiltinVUv ? '' : 'varying vec2 vUv;';
+                const vUvVertAssign = hasBuiltinVUv ? '' : '\n#ifdef USE_UV\nvUv = uv;\n#else\nvUv = vec2(0.0);\n#endif';
+                const vUvFragDecl   = hasBuiltinVUv ? '' : 'varying vec2 vUv;';
+
                 shader.vertexShader = [
                   'uniform mat4 uLocalMatrix;',
                   'varying vec3 vLocalPos;',
                   'varying vec3 vModelPos;',
                   'varying vec3 vModelNormal;',
-                  // NOTE: vUv is already declared by Three.js r128 when USE_UV/USE_MAP is active — do NOT redeclare
+                  vUvVertDecl,
                   shader.vertexShader
-                ].join('\n').replace(
+                ].filter(Boolean).join('\n').replace(
                   '#include <begin_vertex>',
-                  '#include <begin_vertex>\nvLocalPos = position;\nvModelPos = (uLocalMatrix * vec4(position, 1.0)).xyz;\nvModelNormal = normalize((uLocalMatrix * vec4(normal, 0.0)).xyz);'
+                  '#include <begin_vertex>\nvLocalPos = position;\nvModelPos = (uLocalMatrix * vec4(position, 1.0)).xyz;\nvModelNormal = normalize((uLocalMatrix * vec4(normal, 0.0)).xyz);' + vUvVertAssign
                 );
                 shader.fragmentShader = [
                   'uniform vec3 uColor;','uniform float uIsGradient;','uniform vec3 uColor1;','uniform vec3 uColor2;',
@@ -399,11 +406,11 @@
                   'uniform vec3 uPatternOffset;','uniform float uPatternRotation;','uniform float uPatternMinY;',
                   'uniform float uPatternMaxY;','uniform float uPatternMappingMode;',
                   'varying vec3 vLocalPos;','varying vec3 vModelPos;','varying vec3 vModelNormal;',
-                  // NOTE: vUv already declared by Three.js r128 internally — do NOT redeclare
+                  vUvFragDecl,
                   'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }',
                   'float noise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(hash(i + vec2(0,0)), hash(i + vec2(1,0)), f.x), mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y); }',
                   shader.fragmentShader
-                ].join('\n').replace(
+                ].filter(Boolean).join('\n').replace(
                   'vec4 diffuseColor = vec4( diffuse, opacity );',
                   'vec3 baseColor = uColor;\n' +
                   'if (uIsGradient > 0.5) {\n' +

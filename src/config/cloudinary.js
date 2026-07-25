@@ -36,6 +36,10 @@ export function uploadToCloudinary(file, { folder = 'wearconnect/uploads', resou
     }
   }
 
+  if (file.originalname && file.originalname.match(/\.(glb|gltf|bin)$/i)) {
+    options.resource_type = 'raw';
+  }
+
   if (file.buffer) {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(options, (err, result) => {

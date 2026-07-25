@@ -15,7 +15,7 @@ const corsOriginValue = parsedCorsOrigins.length === 0
       : parsedCorsOrigins;
 
 export const config = {
-  port: process.env.PORT || 4000,
+  port: process.env.PORT || 4001,
   nodeEnv: process.env.NODE_ENV || 'development',
   openaiKey: process.env.OPENAI_API_KEY || '',
   corsOrigin: corsOriginValue,

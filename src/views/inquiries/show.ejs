@@ -382,23 +382,42 @@
               mat.onBeforeCompile = function(shader) {
                 Object.assign(shader.uniforms, mat.userData.uniforms);
 
-                // Detect whether THREE already declares vUv (happens when USE_UV / USE_MAP is defined)
-                const hasBuiltinVUv = shader.vertexShader.includes('varying vec2 vUv');
-                const vUvVertDecl   = hasBuiltinVUv ? '' : 'varying vec2 vUv;';
-                const vUvVertAssign = hasBuiltinVUv ? '' : '\n#ifdef USE_UV\nvUv = uv;\n#else\nvUv = vec2(0.0);\n#endif';
-                const vUvFragDecl   = hasBuiltinVUv ? '' : 'varying vec2 vUv;';
+                // ── Vertex shader ────────────────────────────────────────────
+                // Replace Three.js uv chunks so 'vUv' is ALWAYS declared once,
+                // regardless of whether the model has textures (USE_UV) or not.
+                shader.vertexShader = shader.vertexShader
+                  // 1. Always declare vUv; keep uvTransform only when USE_UV is set
+                  .replace(
+                    '#include <uv_pars_vertex>',
+                    'varying vec2 vUv;\n#ifdef USE_UV\nuniform mat3 uvTransform;\n#endif'
+                  )
+                  // 2. Assign vUv from UV map if available, else zero
+                  .replace(
+                    '#include <uv_vertex>',
+                    '#ifdef USE_UV\nvUv = (uvTransform * vec3(uv, 1.0)).xy;\n#else\nvUv = vec2(0.0);\n#endif'
+                  );
 
+                // Prepend our custom varyings + uniforms
                 shader.vertexShader = [
                   'uniform mat4 uLocalMatrix;',
                   'varying vec3 vLocalPos;',
                   'varying vec3 vModelPos;',
                   'varying vec3 vModelNormal;',
-                  vUvVertDecl,
                   shader.vertexShader
-                ].filter(Boolean).join('\n').replace(
+                ].join('\n').replace(
                   '#include <begin_vertex>',
-                  '#include <begin_vertex>\nvLocalPos = position;\nvModelPos = (uLocalMatrix * vec4(position, 1.0)).xyz;\nvModelNormal = normalize((uLocalMatrix * vec4(normal, 0.0)).xyz);' + vUvVertAssign
+                  '#include <begin_vertex>\nvLocalPos = position;\nvModelPos = (uLocalMatrix * vec4(position, 1.0)).xyz;\nvModelNormal = normalize((uLocalMatrix * vec4(normal, 0.0)).xyz);'
                 );
+
+                // ── Fragment shader ───────────────────────────────────────────
+                // Replace Three.js uv_pars_fragment so 'vUv' is always declared.
+                shader.fragmentShader = shader.fragmentShader
+                  .replace(
+                    '#include <uv_pars_fragment>',
+                    'varying vec2 vUv;'
+                  );
+
+                // Prepend custom uniforms + helpers
                 shader.fragmentShader = [
                   'uniform vec3 uColor;','uniform float uIsGradient;','uniform vec3 uColor1;','uniform vec3 uColor2;',
                   'uniform float uMinY;','uniform float uMaxY;','uniform float uHasPattern;','uniform vec3 uPatternColor;',
@@ -406,11 +425,10 @@
                   'uniform vec3 uPatternOffset;','uniform float uPatternRotation;','uniform float uPatternMinY;',
                   'uniform float uPatternMaxY;','uniform float uPatternMappingMode;',
                   'varying vec3 vLocalPos;','varying vec3 vModelPos;','varying vec3 vModelNormal;',
-                  vUvFragDecl,
                   'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }',
                   'float noise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(hash(i + vec2(0,0)), hash(i + vec2(1,0)), f.x), mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y); }',
                   shader.fragmentShader
-                ].filter(Boolean).join('\n').replace(
+                ].join('\n').replace(
                   'vec4 diffuseColor = vec4( diffuse, opacity );',
                   'vec3 baseColor = uColor;\n' +
                   'if (uIsGradient > 0.5) {\n' +

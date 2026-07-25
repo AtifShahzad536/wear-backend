@@ -302,18 +302,27 @@
       renderer.physicallyCorrectLights = true;
       container.appendChild(renderer.domElement);
 
-      // HDRi Environment
+      // HDRi Environment - use Poly Haven CDN (reliable public HDR)
       const pmremGenerator = new THREE.PMREMGenerator(renderer);
       pmremGenerator.compileEquirectangularShader();
-      new THREE.RGBELoader().load(
-        'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/equirectangular/royal_esplanade_1k.hdr',
-        function(texture) {
-          const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-          scene.environment = envMap;
-          texture.dispose();
-          pmremGenerator.dispose();
-        }
-      );
+      try {
+        new THREE.RGBELoader().load(
+          'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr',
+          function(texture) {
+            const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+            scene.environment = envMap;
+            texture.dispose();
+            pmremGenerator.dispose();
+          },
+          undefined,
+          function() {
+            // HDR failed to load — fall back to plain color environment (no crash)
+            pmremGenerator.dispose();
+          }
+        );
+      } catch(e) {
+        pmremGenerator.dispose();
+      }
 
       // Lighting
       const isNight = lightingPreset === 'night';

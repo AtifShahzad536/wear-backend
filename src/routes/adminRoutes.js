@@ -340,6 +340,33 @@ router.put('/builder-models/:id', upload.none(), async (req, res) => {
   }
 });
 
+// Support HTML form POST for update (browsers can't send PUT from a form)
+router.post('/builder-models/:id', upload.none(), async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    const parseJSON = (v) => {
+      if (!v) return {};
+      if (typeof v === 'string') {
+        try { return JSON.parse(v); } catch { return {}; }
+      }
+      return v;
+    };
+    if (updates.model_url) updates.model_url = normalizeImageUrl(updates.model_url);
+    if (updates.thumbnail) updates.thumbnail = normalizeImageUrl(updates.thumbnail);
+    if (updates.mapping) updates.mapping = parseJSON(updates.mapping);
+    if (updates.layers_metadata) updates.layers_metadata = parseJSON(updates.layers_metadata);
+    if (updates.status !== undefined) updates.status = updates.status === 'false' ? false : true;
+
+    const updated = await BuilderModel.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true }).lean();
+    if (!updated) return res.status(404).json({ error: 'Builder model not found' });
+
+    // Return JSON (form uses fetch(), not a standard HTML submit)
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update builder model', details: err.message });
+  }
+});
+
 router.post('/builder-models/:id/delete', upload.none(), async (req, res) => {
   try {
     const removed = await BuilderModel.findByIdAndDelete(req.params.id).lean();

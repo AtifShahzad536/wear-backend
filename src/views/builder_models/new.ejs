@@ -134,27 +134,50 @@
       }
 
       try {
-        const res = await fetch('/api/admin/upload', {
-          method: 'POST',
-          body: formData
-        });
+        let fileUrl;
         
-        let data;
-        const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          data = await res.json();
-        }
+        // 1. Try to get signature for direct Cloudinary upload
+        const folder = 'wearconnect/admin';
+        const sigRes = await fetch(`/api/admin/cloudinary-signature?folder=${folder}`);
         
-        if (!res.ok) {
-          throw new Error((data && data.error) || `Upload failed with status ${res.status}`);
-        }
-        
-        if (!data || !data.url) {
-          throw new Error('Upload succeeded but no URL was returned');
+        if (sigRes.status === 400) {
+          // Cloudinary not configured (likely local development) - fallback to local server upload
+          const fallbackRes = await fetch('/api/admin/upload', {
+            method: 'POST',
+            body: formData
+          });
+          const fallbackData = await fallbackRes.json();
+          if (!fallbackRes.ok) throw new Error(fallbackData.error || 'Upload failed');
+          fileUrl = fallbackData.url;
+        } else {
+          const sigData = await sigRes.json();
+          if (!sigRes.ok) throw new Error(sigData.error || 'Failed to get upload signature');
+
+          // 2. Upload directly to Cloudinary from client browser
+          const isModel = file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf') || file.name.toLowerCase().endsWith('.bin');
+          const uploadUrl = `https://api.cloudinary.com/v1_1/${sigData.cloudName}/${isModel ? 'raw' : 'image'}/upload`;
+
+          const uploadFormData = new FormData();
+          uploadFormData.append('file', file);
+          uploadFormData.append('api_key', sigData.apiKey);
+          uploadFormData.append('timestamp', sigData.timestamp);
+          uploadFormData.append('signature', sigData.signature);
+          uploadFormData.append('folder', folder);
+
+          const res = await fetch(uploadUrl, {
+            method: 'POST',
+            body: uploadFormData
+          });
+          
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error?.message || 'Cloudinary upload failed');
+          }
+          fileUrl = data.secure_url;
         }
 
         const urlInput = document.getElementById(activeFieldId);
-        urlInput.value = data.url;
+        urlInput.value = fileUrl;
         urlInput.dispatchEvent(new Event('change')); // Trigger auto parsing if GLB URL
         
         if (typeof showToast === 'function') {

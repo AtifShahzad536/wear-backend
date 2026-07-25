@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { upload } from '../middleware/upload.js';
-import { uploadToCloudinary, isCloudinaryConfigured } from '../config/cloudinary.js';
+import { uploadToCloudinary, isCloudinaryConfigured, generateCloudinarySignature } from '../config/cloudinary.js';
 import { Category } from '../models/Category.js';
 import { categories as seedCategories } from '../models/data.js';
 import { HomeSettings } from '../models/Home.js';
@@ -25,6 +25,20 @@ function normalizeImageUrl(value) {
   }
   return v;
 }
+
+// Get Cloudinary Upload Signature (Client-side direct upload)
+router.get('/cloudinary-signature', async (req, res) => {
+  try {
+    const { folder = 'wearconnect/uploads' } = req.query;
+    if (!isCloudinaryConfigured()) {
+      return res.status(400).json({ error: 'Cloudinary is not configured' });
+    }
+    const signatureData = generateCloudinarySignature(folder);
+    res.json(signatureData);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate signature', details: err.message });
+  }
+});
 
 // Upload image
 router.post('/upload', upload.single('file'), async (req, res) => {

@@ -72,4 +72,19 @@ export function uploadBase64ToCloudinary(base64Data, { folder = 'wearconnect/sna
     });
 }
 
+export function generateCloudinarySignature(folder) {
+  const timestamp = Math.round(new Date().getTime() / 1000);
+  const paramsToSign = {
+    timestamp,
+    folder,
+  };
+  const signature = cloudinary.utils.api_sign_request(paramsToSign, CLOUDINARY_API_SECRET);
+  return {
+    signature,
+    timestamp,
+    cloudName: CLOUDINARY_CLOUD_NAME,
+    apiKey: CLOUDINARY_API_KEY,
+  };
+}
+
 export default cloudinary;

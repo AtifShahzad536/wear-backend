@@ -104,6 +104,26 @@ app.post('/api/decal/upload', upload.single('file'), async (req, res) => {
   }
 });
 
+// Public 3D Model upload route used by frontend to import models
+app.post('/api/model/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
+
+    if (!isCloudinaryConfigured()) {
+      const fileUrl = req.file.filename ? `/uploads/${req.file.filename}` : '';
+      console.log('[Model Import] Cloudinary not configured, using local path', { fileUrl });
+      return res.status(200).json({ success: true, url: fileUrl });
+    }
+
+    const result = await uploadToCloudinary(req.file, { folder: 'wearconnect/models', resourceType: 'raw' });
+    console.log('[Model Import] Uploaded to Cloudinary', { url: result.secure_url });
+    return res.json({ success: true, url: result.secure_url });
+  } catch (err) {
+    console.error('[Model Import] Upload failed', err);
+    res.status(500).json({ success: false, error: 'Upload failed', details: err?.message || String(err) });
+  }
+});
+
 app.get('/', (req, res) => {
   res.redirect('/admin/login');
 });

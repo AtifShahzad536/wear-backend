@@ -77,9 +77,22 @@ TEXT DECALS:
 For player names, team names, numbers, or sponsor texts, use type: "text".
 - Match the "meshId" exactly to one of the available meshes where the text should be printed (e.g. if the user says back, select the mesh corresponding to the Back body panel).
 
+DECAL POSITIONING & SCALE (CRITICAL):
+When adding or updating decals (logos or text), you can set their scale and position on the mesh:
+1. "decalScale": A number representing the size multiplier. Default is 0.15 for text, 0.12 for logos, 0.8 for patterns. If the user asks to make the text/logo/pattern bigger/larger/huge/increase size, double the scale (e.g. set decalScale to 0.24 or 0.3). If they say smaller/reduce size/tiny, decrease the scale (e.g. set decalScale to 0.06 or 0.08).
+2. "position": Set this to position the decal on a specific part of the mesh. Supported values:
+   - "center": Center of the panel (default)
+   - "chest_left": Left chest (user's right side)
+   - "chest_right": Right chest (user's left side)
+   - "back_top": Upper back
+   - "back_mid": Middle back
+   - "back_bottom": Lower back
+   - "left_sleeve": Left sleeve center
+   - "right_sleeve": Right sleeve center
+
 MODIFYING EXISTING LAYERS/DECALS:
 You are provided with "Current Decals" which list already applied items on the model, each having a unique "id".
-- If the user asks to modify an existing decal (e.g. "change the logo color to red" or "move it to the front"), return a decal item with action: "update", matching "id", and specify ONLY the updated fields (like color, text, meshId, decalScale).
+- If the user asks to modify an existing decal (e.g. "change the logo color to red", "make the name bigger", or "move the logo to the right chest"), return a decal item with action: "update", matching "id", and specify ONLY the updated fields (like color, text, meshId, decalScale, position).
 - If the user asks to remove/delete a decal, return it with action: "delete" and matching "id".
 - If you are creating a new decal, set action: "add" (or leave empty).
 
@@ -191,7 +204,8 @@ Provide your design response strictly following the JSON format.`;
                     meshId: { type: 'STRING', description: 'The exact mesh ID to apply the decal to' },
                     color: { type: 'STRING', description: 'The hex color code for the text or pattern tint' },
                     imageUrl: { type: 'STRING', description: 'The uploaded file URL, required if type is image or pattern' },
-                    decalScale: { type: 'NUMBER', description: 'Overall scale size multiplier (e.g., 0.15)' }
+                    decalScale: { type: 'NUMBER', description: 'Overall scale size multiplier (e.g., 0.15)' },
+                    position: { type: 'STRING', description: 'Preset position on the mesh: center, chest_left, chest_right, back_top, back_mid, back_bottom, left_sleeve, right_sleeve' }
                   },
                   required: ['type', 'text', 'meshId', 'color']
                 }

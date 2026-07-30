@@ -41,7 +41,7 @@
                 <input type="file" accept="video/*" class="hidden video-file-input" />
                 <button type="button" class="btn-upload-video px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl transition whitespace-nowrap">Upload Video</button>
               </div>
-              <div class="video-preview-container mt-3" style="<%= v.url ? '' : 'display:none;' %>">
+              <div class="video-preview-container mt-3" <% if (!v.url) { %>style="display: none;"<% } %>>
                 <video src="<%= v.url || '' %>" controls class="w-full rounded-xl border border-slate-200 bg-black aspect-video max-h-48"></video>
               </div>
             </div>
@@ -52,7 +52,7 @@
                 <input type="file" accept="image/*" class="hidden thumb-file-input" />
                 <button type="button" class="btn-upload-thumb px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl transition whitespace-nowrap">Upload Image</button>
               </div>
-              <div class="thumb-preview-container mt-3" style="<%= v.thumbnailUrl ? '' : 'display:none;' %>">
+              <div class="thumb-preview-container mt-3" <% if (!v.thumbnailUrl) { %>style="display: none;"<% } %>>
                 <img src="<%= v.thumbnailUrl || '' %>" class="rounded-xl border border-slate-200 bg-slate-50 max-h-32 object-contain" />
               </div>
             </div>

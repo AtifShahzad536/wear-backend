@@ -27,6 +27,7 @@ router.get('/settings', async (req, res) => {
     partners: doc.partners || [],
     valueProps: doc.valueProps || [],
     topSelling: doc.topSelling || [],
+    videos: doc.videos || [],
   });
 });
 

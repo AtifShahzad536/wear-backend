@@ -39,6 +39,20 @@ const HomeSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    videos: {
+      type: [
+        new mongoose.Schema(
+          {
+            title: { type: String, required: true },
+            description: { type: String, default: '' },
+            url: { type: String, required: true },
+            thumbnailUrl: { type: String, default: '' },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

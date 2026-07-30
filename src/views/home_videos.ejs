@@ -1,0 +1,220 @@
+<%- include('./partials/header', { title: 'Home Videos' }) %>
+<%- include('./partials/sidebar', { activePage: 'home-videos' }) %>
+
+<main class="col-span-12 md:col-span-9 lg:col-span-10 space-y-6">
+  <!-- Page Title & Actions -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Home Page Videos</h1>
+      <p class="text-sm text-slate-500 mt-1">Manage videos that are showcased in the "Behind the Scenes" section of your homepage.</p>
+    </div>
+    <% if (typeof success !== 'undefined' && success) { %>
+      <div id="alertSuccess" class="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2">
+        <i class="bi bi-check-circle-fill text-emerald-500"></i> Changes saved successfully!
+      </div>
+    <% } %>
+  </div>
+
+  <form method="POST" action="/admin/home-videos" id="videoForm" class="space-y-6">
+    <div id="rows" class="space-y-6">
+      <% videos.forEach((v, i) => { %>
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4 row-item relative">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h3 class="text-sm font-bold text-slate-800">Video #<span class="row-index"><%= i + 1 %></span></h3>
+            <button type="button" class="btn-remove inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 font-bold text-xs rounded-xl transition">
+              <i class="bi bi-trash3-fill"></i> Remove
+            </button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Video Title</label>
+              <input type="text" name="videos[<%= i %>][title]" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value="<%= v.title || '' %>" required placeholder="e.g. Inside our factory" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Description (Optional)</label>
+              <input type="text" name="videos[<%= i %>][description]" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value="<%= v.description || '' %>" placeholder="e.g. How we design and manufacture export sportswear." />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Video URL (Cloudinary)</label>
+              <div class="flex gap-2">
+                <input type="text" name="videos[<%= i %>][url]" class="video-url-input flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value="<%= v.url || '' %>" required placeholder="https://res.cloudinary.com/..." />
+                <input type="file" accept="video/*" class="hidden video-file-input" />
+                <button type="button" class="btn-upload-video px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl transition whitespace-nowrap">Upload Video</button>
+              </div>
+              <div class="video-preview-container mt-3" style="<%= v.url ? '' : 'display:none;' %>">
+                <video src="<%= v.url || '' %>" controls class="w-full rounded-xl border border-slate-200 bg-black aspect-video max-h-48"></video>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Thumbnail Image URL (Optional)</label>
+              <div class="flex gap-2">
+                <input type="text" name="videos[<%= i %>][thumbnailUrl]" class="thumb-url-input flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value="<%= v.thumbnailUrl || '' %>" placeholder="https://res.cloudinary.com/..." />
+                <input type="file" accept="image/*" class="hidden thumb-file-input" />
+                <button type="button" class="btn-upload-thumb px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl transition whitespace-nowrap">Upload Image</button>
+              </div>
+              <div class="thumb-preview-container mt-3" style="<%= v.thumbnailUrl ? '' : 'display:none;' %>">
+                <img src="<%= v.thumbnailUrl || '' %>" class="rounded-xl border border-slate-200 bg-slate-50 max-h-32 object-contain" />
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3 border-t border-slate-200/80 pt-6">
+      <button type="button" id="btn-add" class="inline-flex items-center gap-2 px-5 py-3 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-sm transition">
+        <i class="bi bi-plus-lg text-slate-500"></i> Add Video Slot
+      </button>
+      <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition">
+        <i class="bi bi-cloud-arrow-up-fill"></i> Save Changes
+      </button>
+    </div>
+  </form>
+</main>
+
+<template id="tmpl">
+  <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4 row-item relative">
+    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+      <h3 class="text-sm font-bold text-slate-800">Video #<span class="row-index"></span></h3>
+      <button type="button" class="btn-remove inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 font-bold text-xs rounded-xl transition">
+        <i class="bi bi-trash3-fill"></i> Remove
+      </button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Video Title</label>
+        <input type="text" data-name="title" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" required placeholder="e.g. Inside our factory" />
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Description (Optional)</label>
+        <input type="text" data-name="description" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. How we design and manufacture export sportswear." />
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Video URL (Cloudinary)</label>
+        <div class="flex gap-2">
+          <input type="text" data-name="url" class="video-url-input flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" required placeholder="https://res.cloudinary.com/..." />
+          <input type="file" accept="video/*" class="hidden video-file-input" />
+          <button type="button" class="btn-upload-video px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl transition whitespace-nowrap">Upload Video</button>
+        </div>
+        <div class="video-preview-container mt-3" style="display:none;">
+          <video src="" controls class="w-full rounded-xl border border-slate-200 bg-black aspect-video max-h-48"></video>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Thumbnail Image URL (Optional)</label>
+        <div class="flex gap-2">
+          <input type="text" data-name="thumbnailUrl" class="thumb-url-input flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="https://res.cloudinary.com/..." />
+          <input type="file" accept="image/*" class="hidden thumb-file-input" />
+          <button type="button" class="btn-upload-thumb px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl transition whitespace-nowrap">Upload Image</button>
+        </div>
+        <div class="thumb-preview-container mt-3" style="display:none;">
+          <img src="" class="rounded-xl border border-slate-200 bg-slate-50 max-h-32 object-contain" />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+  const rows = document.getElementById('rows');
+  const tmpl = document.getElementById('tmpl');
+
+  function reindex() {
+    rows.querySelectorAll('.row-item').forEach((row, i) => {
+      row.querySelector('.row-index').textContent = i + 1;
+      row.querySelectorAll('[data-name],[name]').forEach(el => {
+        const key = el.dataset.name || (el.name || '').match(/\[([^\]]+)\]$/)?.[1];
+        if (key) el.name = `videos[${i}][${key}]`;
+      });
+    });
+  }
+
+  // Handle uploading files using Generic wear-backend upload API
+  async function handleFileUpload(file, fileInput, textInput, previewContainer, previewElement, isVideo) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const originalText = fileInput.nextElementSibling.textContent;
+    fileInput.nextElementSibling.textContent = 'Uploading...';
+    fileInput.nextElementSibling.disabled = true;
+
+    try {
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      
+      textInput.value = data.url;
+      previewContainer.style.display = 'block';
+      previewElement.src = data.url;
+    } catch (err) {
+      alert('Upload failed: ' + err.message);
+    } finally {
+      fileInput.nextElementSibling.textContent = originalText;
+      fileInput.nextElementSibling.disabled = false;
+    }
+  }
+
+  // Add click handler
+  document.getElementById('btn-add').addEventListener('click', () => { 
+    rows.appendChild(tmpl.content.cloneNode(true)); 
+    reindex(); 
+  });
+
+  // Delegate clicks for removal and triggering file uploads
+  rows.addEventListener('click', async (e) => {
+    if (e.target.closest('.btn-remove')) {
+      e.target.closest('.row-item').remove();
+      reindex();
+    }
+    
+    if (e.target.classList.contains('btn-upload-video')) {
+      const fileInput = e.target.previousElementSibling;
+      fileInput.click();
+    }
+    
+    if (e.target.classList.contains('btn-upload-thumb')) {
+      const fileInput = e.target.previousElementSibling;
+      fileInput.click();
+    }
+  });
+
+  // Handle file input changes
+  rows.addEventListener('change', async (e) => {
+    if (e.target.classList.contains('video-file-input')) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const card = e.target.closest('.row-item');
+      const textInput = card.querySelector('.video-url-input');
+      const previewContainer = card.querySelector('.video-preview-container');
+      const videoEl = card.querySelector('.video-preview-container video');
+      await handleFileUpload(file, e.target, textInput, previewContainer, videoEl, true);
+    }
+    
+    if (e.target.classList.contains('thumb-file-input')) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const card = e.target.closest('.row-item');
+      const textInput = card.querySelector('.thumb-url-input');
+      const previewContainer = card.querySelector('.thumb-preview-container');
+      const imgEl = card.querySelector('.thumb-preview-container img');
+      await handleFileUpload(file, e.target, textInput, previewContainer, imgEl, false);
+    }
+  });
+
+  // Success alert auto timeout
+  const alertSuccess = document.getElementById('alertSuccess');
+  if (alertSuccess) {
+    setTimeout(() => {
+      alertSuccess.style.opacity = '0';
+      setTimeout(() => alertSuccess.remove(), 500);
+    }, 4000);
+  }
+
+  reindex();
+</script>
+
+<%- include('./partials/footer') %>

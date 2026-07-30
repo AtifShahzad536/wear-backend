@@ -4,6 +4,7 @@ import { Inquiry } from '../models/Inquiry.js';
 import { BuilderModel } from '../models/BuilderModel.js';
 import { BuilderPattern } from '../models/BuilderPattern.js';
 import { BuilderLogo } from '../models/BuilderLogo.js';
+import { HomeSettings } from '../models/Home.js';
 // No direct HomeSettings usage in web routes; pages use API via client-side JS.
 
 const router = Router();
@@ -204,6 +205,44 @@ router.get('/builder-logos/:id/edit', async (req, res) => {
   const logo = await BuilderLogo.findById(req.params.id).lean();
   if (!logo) return res.status(404).send('Builder logo not found');
   res.render('builder_logos/edit', { title: `Edit Logo • ${logo.name}`, logo });
+});
+
+// Home Videos CRUD
+router.get('/home-videos', async (req, res) => {
+  let doc = await HomeSettings.findOne({ key: 'default' });
+  if (!doc) doc = await HomeSettings.create({ key: 'default' });
+  const success = req.query.success === 'true';
+  res.render('home_videos', { title: 'Home Videos', videos: doc.videos || [], success });
+});
+
+router.post('/home-videos', async (req, res) => {
+  try {
+    const rawVideos = req.body.videos || [];
+    let list = [];
+    if (Array.isArray(rawVideos)) {
+      list = rawVideos;
+    } else if (typeof rawVideos === 'object') {
+      list = Object.keys(rawVideos)
+        .sort((a, b) => Number(a) - Number(b))
+        .map((k) => rawVideos[k]);
+    }
+    
+    const videosList = list.map((v) => ({
+      title: v.title || '',
+      description: v.description || '',
+      url: v.url || '',
+      thumbnailUrl: v.thumbnailUrl || '',
+    })).filter(v => v.title && v.url);
+
+    await HomeSettings.updateOne(
+      { key: 'default' },
+      { $set: { videos: videosList } },
+      { upsert: true }
+    );
+    res.redirect('/admin/home-videos?success=true');
+  } catch (err) {
+    res.status(500).send('Failed to update videos: ' + err.message);
+  }
 });
 
 export default router;

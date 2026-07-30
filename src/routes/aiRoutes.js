@@ -25,7 +25,7 @@ router.post('/customize', async (req, res) => {
     }
 
     // Build the request body for Gemini API (Structured JSON output)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const systemInstruction = `You are a professional sportswear designer. Your task is to customize a 3D sports jersey/outfit model based on the user's design command.
 You must return a JSON object with the exact updates to apply to the model's meshes AND the decals list.
@@ -213,12 +213,13 @@ Provide your design response strictly following the JSON format.`;
               },
               explanation: {
                 type: 'STRING',
-                description: 'Brief description of style decisions.'
+                description: 'A very short, 1-sentence description of the design decisions made.'
               }
             },
             required: ['updates', 'explanation', 'decals']
           },
-          temperature: 0.3
+          temperature: 0.3,
+          maxOutputTokens: 2048
         }
       })
     });
@@ -258,7 +259,13 @@ Provide your design response strictly following the JSON format.`;
     if (cleanText.startsWith('```')) {
       cleanText = cleanText.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
     }
-    const designResponse = JSON.parse(cleanText);
+    let designResponse;
+    try {
+      designResponse = JSON.parse(cleanText);
+    } catch (parseError) {
+      console.error('[AI Customize] JSON Parse Error. Text preview:', cleanText.substring(0, 1000), '... [TRUNCATED] ...', cleanText.substring(Math.max(0, cleanText.length - 1000)));
+      throw new Error(`Failed to parse AI response JSON: ${parseError.message}`);
+    }
     console.log('[AI Customize] Response updates keys:', Object.keys(designResponse.updates || {}));
     console.log('[AI Customize] Response decals:', JSON.stringify(designResponse.decals || [], null, 2));
     res.json(designResponse);

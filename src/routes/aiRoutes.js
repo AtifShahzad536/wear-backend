@@ -14,8 +14,9 @@ router.post('/customize', async (req, res) => {
 
     const apiKey = config.geminiApiKey;
     if (!apiKey) {
-      return res.status(400).json({ 
-        error: 'Gemini API key is missing. Please add GEMINI_API_KEY to your .env file.' 
+      return res.status(429).json({ 
+        error: 'quota_exceeded',
+        details: 'Gemini API key is missing. Please add GEMINI_API_KEY to your .env file.' 
       });
     }
 
@@ -224,7 +225,26 @@ Provide your design response strictly following the JSON format.`;
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Gemini API returned status ${response.status}: ${errText}`);
+      let errJson;
+      try {
+        errJson = JSON.parse(errText);
+      } catch (e) {}
+
+      const errMessage = errJson?.error?.message || errText || '';
+      const isQuota = response.status === 429 || 
+                      response.status === 403 || 
+                      errMessage.toLowerCase().includes('quota') || 
+                      errMessage.toLowerCase().includes('limit') || 
+                      errMessage.toLowerCase().includes('exhausted') || 
+                      errMessage.toLowerCase().includes('billing') || 
+                      errMessage.toLowerCase().includes('credit') || 
+                      errMessage.toLowerCase().includes('reach');
+
+      throw {
+        status: isQuota ? 429 : 500,
+        error: isQuota ? 'quota_exceeded' : 'Failed to generate customization.',
+        details: errMessage
+      };
     }
 
     const data = await response.json();
@@ -244,10 +264,17 @@ Provide your design response strictly following the JSON format.`;
     res.json(designResponse);
   } catch (error) {
     console.error('[AI Customize Error]:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate customization.', 
-      details: error.message 
-    });
+    if (error.status) {
+      res.status(error.status).json({
+        error: error.error,
+        details: error.details
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to generate customization.', 
+        details: error.message 
+      });
+    }
   }
 });
 

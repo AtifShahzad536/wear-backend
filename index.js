@@ -84,6 +84,11 @@ app.use('/api/bags', bagsRoutes);
 app.use('/api/home', homeRoutes);
 app.use('/api/inquiry', inquiryRoutes);
 app.use('/api/builder', builderRoutes);
+
+// ✅ Keep-alive ping — prevents Vercel cold starts (called by vercel.json cron every 5 min)
+app.get('/api/ping', (req, res) => {
+  res.json({ ok: true, ts: Date.now() });
+});
 // Public Decal upload route used by frontend 3D Customizer to upload logos and pattern overlays
 app.post('/api/decal/upload', upload.single('file'), async (req, res) => {
   try {

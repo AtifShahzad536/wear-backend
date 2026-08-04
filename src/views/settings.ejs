@@ -31,6 +31,18 @@
           </label>
         </div>
 
+        <!-- Splash Screen Toggle -->
+        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm">Splash Screen</h3>
+            <p class="text-slate-500 text-xs mt-1">Show or hide the loading splash screen when users visit the website.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="splashEnabled" class="sr-only peer" <%= settings.splashEnabled !== false ? 'checked' : '' %>>
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+
         <div class="flex justify-end pt-4 border-t border-slate-100">
           <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl shadow-sm shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 transition-all focus:ring-4 focus:ring-indigo-100">
             Save Settings

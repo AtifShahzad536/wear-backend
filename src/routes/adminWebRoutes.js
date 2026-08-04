@@ -256,9 +256,10 @@ router.get('/settings', async (req, res) => {
 router.post('/settings', async (req, res) => {
   try {
     const customBuilderEnabled = req.body.customBuilderEnabled === 'on';
+    const splashEnabled = req.body.splashEnabled === 'on';
     await HomeSettings.updateOne(
       { key: 'default' },
-      { $set: { customBuilderEnabled } },
+      { $set: { customBuilderEnabled, splashEnabled } },
       { upsert: true }
     );
     res.redirect('/admin/settings?success=true');

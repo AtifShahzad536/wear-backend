@@ -23,6 +23,7 @@ router.get('/settings', async (req, res) => {
   const doc = (await HomeSettings.findOne({ key: 'default' }).lean()) || {};
   res.json({
     customBuilderEnabled: doc.customBuilderEnabled !== false,
+    splashEnabled: doc.splashEnabled !== false,
     heroImages: doc.heroImages || [],
     testimonials: doc.testimonials || [],
     partners: doc.partners || [],

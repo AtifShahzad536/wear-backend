@@ -22,6 +22,7 @@ router.get('/topSelling', async (req, res) => {
 router.get('/settings', async (req, res) => {
   const doc = (await HomeSettings.findOne({ key: 'default' }).lean()) || {};
   res.json({
+    customBuilderEnabled: doc.customBuilderEnabled !== false,
     heroImages: doc.heroImages || [],
     testimonials: doc.testimonials || [],
     partners: doc.partners || [],

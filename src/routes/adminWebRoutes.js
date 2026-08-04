@@ -245,4 +245,26 @@ router.post('/home-videos', async (req, res) => {
   }
 });
 
+// Global Settings
+router.get('/settings', async (req, res) => {
+  let doc = await HomeSettings.findOne({ key: 'default' });
+  if (!doc) doc = await HomeSettings.create({ key: 'default' });
+  const success = req.query.success === 'true';
+  res.render('settings', { title: 'Global Settings', settings: doc, success, activePage: 'settings' });
+});
+
+router.post('/settings', async (req, res) => {
+  try {
+    const customBuilderEnabled = req.body.customBuilderEnabled === 'on';
+    await HomeSettings.updateOne(
+      { key: 'default' },
+      { $set: { customBuilderEnabled } },
+      { upsert: true }
+    );
+    res.redirect('/admin/settings?success=true');
+  } catch (err) {
+    res.status(500).send('Failed to update settings: ' + err.message);
+  }
+});
+
 export default router;

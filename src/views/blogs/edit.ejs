@@ -1,11 +1,40 @@
 <%- include('../partials/header', { title: 'Edit Blog Post' }) %>
 <%- include('../partials/sidebar', { activePage: 'blogs' }) %>
 
+<!-- Include Quill Styles and Script -->
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+
+<style>
+  /* Custom Quill Editor Overrides */
+  .ql-editor {
+    min-height: 350px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #334155;
+  }
+  .ql-container.ql-snow {
+    border: none !important;
+  }
+  .ql-toolbar.ql-snow {
+    border: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    background: #f8fafc;
+  }
+  #editor-container {
+    border: 1px solid #cbd5e1;
+  }
+  #editor-container:focus-within {
+    border-color: #6366f1;
+    ring: 2px;
+  }
+</style>
+
 <main class="col-span-12 md:col-span-9 lg:col-span-10 space-y-6">
   <div class="flex items-center justify-between border-b border-slate-200/80 pb-4">
     <div>
       <h1 class="text-2xl font-extrabold text-slate-900">Edit Blog Post</h1>
-      <p class="text-sm text-slate-500 mt-1">Make changes to your published article.</p>
+      <p class="text-sm text-slate-500 mt-1">Make changes using the document editor.</p>
     </div>
     <a href="/admin/blogs" class="text-xs font-bold text-slate-600 border border-slate-200 px-3 py-2 rounded-xl hover:bg-slate-100">Cancel</a>
   </div>
@@ -55,10 +84,14 @@
         <textarea name="excerpt" rows="2" required placeholder="Write a short 2-3 sentence summary for listing card previews..." class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"><%= blog.excerpt %></textarea>
       </div>
 
+      <!-- Rich Text Document Editor Container -->
       <div>
-        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Content (HTML Supported) *</label>
-        <p class="text-[10px] text-slate-400 mb-2 font-medium">Tip: HTML tags like &lt;h2&gt;, &lt;p&gt;, &lt;strong&gt;, &lt;ul&gt;, &lt;li&gt;, and links can be used to format the article beautifully.</p>
-        <textarea name="content" rows="12" required placeholder="Write the full body content of your blog post here..." class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono"><%= blog.content %></textarea>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Content (Document Editor) *</label>
+        <p class="text-[10px] text-slate-400 mb-2 font-medium">Use the toolbar to format headers, align text, insert lists, and embed layout images.</p>
+        <div id="editor-container" class="rounded-xl overflow-hidden">
+          <div id="editor"></div>
+        </div>
+        <input type="hidden" name="content" id="contentInput" />
       </div>
 
       <div class="flex justify-end pt-2 gap-3">
@@ -70,6 +103,25 @@
 </main>
 
 <script>
+  // Initialize Quill Editor
+  const quill = new Quill('#editor', {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+        [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults
+        [{ 'align': [] }],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link', 'image', 'video'],
+        ['clean']                                         // remove formatting
+      ]
+    }
+  });
+
+  // Pre-populate Quill editor with existing HTML content
+  quill.root.innerHTML = <%- JSON.stringify(blog.content) %>;
+
   // Handle Cover Image Upload
   document.getElementById('fileInput').addEventListener('change', async (e) => {
     const file = e.target.files[0];
@@ -78,7 +130,7 @@
     const statusDiv = document.getElementById('uploadStatus');
     statusDiv.classList.remove('hidden');
     statusDiv.textContent = 'Uploading image to Cloudinary...';
-    statusDiv.className = 'text-[10px] text-slate-400 mt-1 font-semibold';
+    statusDiv.className = 'text-[10px] text-slate-440 mt-1 font-semibold';
     
     const formData = new FormData();
     formData.append('file', file);
@@ -89,16 +141,20 @@
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       document.getElementById('coverImage').value = data.url;
       statusDiv.textContent = 'Image uploaded successfully!';
-      statusDiv.className = 'text-[10px] text-emerald-600 mt-1 font-semibold';
+      statusDiv.className = 'text-[10px] text-emerald-605 mt-1 font-semibold';
     } catch (err) {
       statusDiv.textContent = 'Upload failed: ' + err.message;
-      statusDiv.className = 'text-[10px] text-rose-600 mt-1 font-semibold';
+      statusDiv.className = 'text-[10px] text-rose-650 mt-1 font-semibold';
     }
   });
 
   // Handle Form Submission
   document.getElementById('blogForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // Copy HTML from Quill editor to the hidden form input
+    document.getElementById('contentInput').value = quill.root.innerHTML;
+    
     const formData = new FormData(e.target);
     const body = Object.fromEntries(formData.entries());
     

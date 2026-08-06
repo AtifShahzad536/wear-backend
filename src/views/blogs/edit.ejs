@@ -4,6 +4,7 @@
 <!-- Include Quill Styles and Script -->
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@botom/quill-resize-module@1.2.4/dist/quill-resize-module.js"></script>
 
 <style>
   /* Custom Quill Editor Overrides */
@@ -103,10 +104,19 @@
 </main>
 
 <script>
+  // Register the resize module
+  const ResizeModule = window.QuillResizeModule || (window.QuillResizeModule && window.QuillResizeModule.default);
+  if (ResizeModule) {
+    Quill.register("modules/resize", ResizeModule);
+  }
+
   // Initialize Quill Editor
   const quill = new Quill('#editor', {
     theme: 'snow',
     modules: {
+      resize: {
+        showSize: true
+      },
       toolbar: [
         [{ 'header': [1, 2, 3, false] }],
         ['bold', 'italic', 'underline', 'strike'],        // toggled buttons

@@ -28,6 +28,7 @@ import { upload } from './src/middleware/upload.js';
 import { uploadToCloudinary, isCloudinaryConfigured } from './src/config/cloudinary.js';
 
 import aiRoutes from './src/routes/aiRoutes.js';
+import blogRoutes from './src/routes/blogRoutes.js';
 
 const app = express();
 app.use(cors({ origin: config.corsOrigin }));
@@ -59,6 +60,7 @@ app.use('/images', express.static(path.resolve(process.cwd(), 'uploads'), static
 app.use('/service/uploads', express.static(path.resolve(process.cwd(), 'service', 'uploads'), staticOptions));
 
 app.use('/api', categoryRoutes);
+app.use('/api', blogRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/ai', aiRoutes);
 // Public admin login page (EJS)

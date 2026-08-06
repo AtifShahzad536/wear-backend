@@ -5,7 +5,7 @@ import { BuilderModel } from '../models/BuilderModel.js';
 import { BuilderPattern } from '../models/BuilderPattern.js';
 import { BuilderLogo } from '../models/BuilderLogo.js';
 import { HomeSettings } from '../models/Home.js';
-// No direct HomeSettings usage in web routes; pages use API via client-side JS.
+import { Blog } from '../models/Blog.js';
 
 const router = Router();
 
@@ -265,6 +265,30 @@ router.post('/settings', async (req, res) => {
     res.redirect('/admin/settings?success=true');
   } catch (err) {
     res.status(500).send('Failed to update settings: ' + err.message);
+  }
+});
+
+// Blogs Web UI Views
+router.get('/blogs', async (req, res) => {
+  try {
+    const list = await Blog.find({}).sort({ createdAt: -1 }).lean();
+    res.render('blogs/list', { title: 'Blogs Manager', blogs: list, activePage: 'blogs' });
+  } catch (err) {
+    res.status(500).send('Failed to load blogs list: ' + err.message);
+  }
+});
+
+router.get('/blogs/new', (req, res) => {
+  res.render('blogs/new', { title: 'New Blog Post', activePage: 'blogs' });
+});
+
+router.get('/blogs/:id/edit', async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id).lean();
+    if (!blog) return res.status(404).send('Blog not found');
+    res.render('blogs/edit', { title: `Edit ${blog.title}`, blog, activePage: 'blogs' });
+  } catch (err) {
+    res.status(500).send('Failed to load blog post: ' + err.message);
   }
 });
 

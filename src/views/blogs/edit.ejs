@@ -27,7 +27,7 @@
   }
   #editor-container:focus-within {
     border-color: #6366f1;
-    ring: 2px;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
   }
 </style>
 
@@ -92,6 +92,7 @@
         <div id="editor-container" class="rounded-xl overflow-hidden">
           <div id="editor"></div>
         </div>
+        <div id="contentHtml" class="hidden"><%- blog.content %></div>
         <input type="hidden" name="content" id="contentInput" />
       </div>
 
@@ -130,7 +131,7 @@
   });
 
   // Pre-populate Quill editor with existing HTML content
-  quill.root.innerHTML = <%- JSON.stringify(blog.content) %>;
+  quill.root.innerHTML = document.getElementById('contentHtml').innerHTML;
 
   // Handle Cover Image Upload
   document.getElementById('fileInput').addEventListener('change', async (e) => {

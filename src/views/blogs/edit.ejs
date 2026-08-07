@@ -78,10 +78,44 @@
   tinymce.init({
     selector: '#editor',
     plugins: 'image link lists media table code wordcount',
-    toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | link image media | code',
+    toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist table | link image media | code',
     height: 450,
     branding: false,
     promotion: false,
+    image_title: true,
+    automatic_uploads: true,
+    file_picker_types: 'image media',
+    file_picker_callback: function (cb, value, meta) {
+      var input = document.createElement('input');
+      input.setAttribute('type', 'file');
+      if (meta.filetype === 'image') {
+        input.setAttribute('accept', 'image/*');
+      } else if (meta.filetype === 'media') {
+        input.setAttribute('accept', 'video/*');
+      }
+
+      input.onchange = async function () {
+        var file = this.files[0];
+        if (!file) return;
+
+        var formData = new FormData();
+        formData.append('file', file);
+
+        try {
+          var res = await fetch('/api/admin/upload', {
+            method: 'POST',
+            body: formData
+          });
+          var data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Upload failed');
+          cb(data.url, { title: file.name });
+        } catch (err) {
+          alert('Upload failed: ' + err.message);
+        }
+      };
+
+      input.click();
+    },
     content_style: 'body { font-family: Outfit, sans-serif; font-size: 14px; color: #334155; }',
     setup: function (editor) {
       editor.on('change', function () {

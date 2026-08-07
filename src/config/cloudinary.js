@@ -31,7 +31,10 @@ export function uploadToCloudinary(file, { folder = 'wearconnect/uploads', resou
   if (file.mimetype) {
     if (file.mimetype.startsWith('video/')) {
       options.resource_type = 'video';
-    } else if (!file.mimetype.startsWith('image/')) {
+    } else if (file.mimetype.startsWith('image/')) {
+      options.resource_type = 'image';
+      options.format = 'webp'; // Automatically convert images to optimized WebP format
+    } else {
       options.resource_type = 'auto';
     }
   }

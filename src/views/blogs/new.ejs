@@ -1,35 +1,8 @@
 <%- include('../partials/header', { title: 'New Blog Post' }) %>
 <%- include('../partials/sidebar', { activePage: 'blogs' }) %>
 
-<!-- Include Quill Styles and Script -->
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@botom/quill-resize-module@1.2.4/dist/quill-resize-module.js"></script>
-
-<style>
-  /* Custom Quill Editor Overrides */
-  .ql-editor {
-    min-height: 350px;
-    font-size: 14px;
-    line-height: 1.6;
-    color: #334155;
-  }
-  .ql-container.ql-snow {
-    border: none !important;
-  }
-  .ql-toolbar.ql-snow {
-    border: none !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-    background: #f8fafc;
-  }
-  #editor-container {
-    border: 1px solid #cbd5e1;
-  }
-  #editor-container:focus-within {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
-  }
-</style>
+<!-- Include TinyMCE Script -->
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
 
 <main class="col-span-12 md:col-span-9 lg:col-span-10 space-y-6">
   <div class="flex items-center justify-between border-b border-slate-200/80 pb-4">
@@ -87,13 +60,10 @@
       <div>
         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Content (Document Editor) *</label>
         <p class="text-[10px] text-slate-400 mb-2 font-medium">Use the toolbar to format headers, align text, insert lists, and embed layout images.</p>
-        <div id="editor-container" class="rounded-xl overflow-hidden">
-          <div id="editor">
-            <h2>Add your heading here...</h2>
-            <p>Write your paragraph content here. You can insert images, align them, and style the text using the toolbar above.</p>
-          </div>
-        </div>
-        <input type="hidden" name="content" id="contentInput" />
+        <textarea name="content" id="editor" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" style="min-height: 450px;">
+          <h2>Add your heading here...</h2>
+          <p>Write your paragraph content here. You can insert images, align them, and style the text using the toolbar above.</p>
+        </textarea>
       </div>
 
       <div class="flex justify-end pt-2 gap-3">
@@ -105,28 +75,19 @@
 </main>
 
 <script>
-  // Register the resize module
-  const ResizeModule = window.QuillResizeModule || (window.QuillResizeModule && window.QuillResizeModule.default);
-  if (ResizeModule) {
-    Quill.register("modules/resize", ResizeModule);
-  }
-
-  // Initialize Quill Editor
-  const quill = new Quill('#editor', {
-    theme: 'snow',
-    modules: {
-      resize: {
-        showSize: true
-      },
-      toolbar: [
-        [{ 'header': [1, 2, 3, false] }],
-        ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
-        [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults
-        [{ 'align': [] }],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        ['link', 'image', 'video'],
-        ['clean']                                         // remove formatting
-      ]
+  // Initialize TinyMCE Editor
+  tinymce.init({
+    selector: '#editor',
+    plugins: 'image link lists media table code wordcount',
+    toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | link image media | code',
+    height: 450,
+    branding: false,
+    promotion: false,
+    content_style: 'body { font-family: Outfit, sans-serif; font-size: 14px; color: #334155; }',
+    setup: function (editor) {
+      editor.on('change', function () {
+        tinymce.triggerSave();
+      });
     }
   });
 
@@ -160,8 +121,8 @@
   document.getElementById('blogForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // Copy HTML from Quill editor to the hidden form input
-    document.getElementById('contentInput').value = quill.root.innerHTML;
+    // Save TinyMCE content to textarea
+    tinymce.triggerSave();
     
     const formData = new FormData(e.target);
     const body = Object.fromEntries(formData.entries());

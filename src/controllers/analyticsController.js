@@ -4,9 +4,21 @@ dotenv.config();
 
 const propertyId = process.env.GA_PROPERTY_ID;
 
-const analyticsDataClient = new BetaAnalyticsDataClient({
-  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS || 'google-analytics-key.json'
-});
+let configOptions = {};
+if (process.env.GA_CLIENT_EMAIL && process.env.GA_PRIVATE_KEY) {
+  configOptions = {
+    credentials: {
+      client_email: process.env.GA_CLIENT_EMAIL,
+      private_key: process.env.GA_PRIVATE_KEY.replace(/\\n/g, '\n')
+    }
+  };
+} else {
+  configOptions = {
+    keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS || 'google-analytics-key.json'
+  };
+}
+
+const analyticsDataClient = new BetaAnalyticsDataClient(configOptions);
 
 export const getRealtimeAnalytics = async (req, res) => {
   try {

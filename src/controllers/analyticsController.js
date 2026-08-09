@@ -7,12 +7,6 @@ const propertyId = process.env.GA_PROPERTY_ID;
 let configOptions = {};
 if (process.env.GA_CLIENT_EMAIL && process.env.GA_PRIVATE_KEY) {
   let rawKey = process.env.GA_PRIVATE_KEY;
-  console.log('[Analytics Debug] Raw key length:', rawKey.length);
-  console.log('[Analytics Debug] Raw key starts with:', rawKey.slice(0, 35));
-  console.log('[Analytics Debug] Raw key ends with:', rawKey.slice(-35));
-  console.log('[Analytics Debug] Raw key contains literal \\n:', rawKey.includes('\\n'));
-  console.log('[Analytics Debug] Raw key contains real newline:', rawKey.includes('\n'));
-
   let privateKey = rawKey.trim();
   if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
     privateKey = privateKey.slice(1, -1);
@@ -20,11 +14,21 @@ if (process.env.GA_CLIENT_EMAIL && process.env.GA_PRIVATE_KEY) {
   if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
     privateKey = privateKey.slice(1, -1);
   }
+  let beforeReplace = privateKey;
   privateKey = privateKey.replace(/\\n/g, '\n');
 
-  console.log('[Analytics Debug] Cleaned key length:', privateKey.length);
-  console.log('[Analytics Debug] Cleaned key starts with:', privateKey.slice(0, 35));
-  console.log('[Analytics Debug] Cleaned key ends with:', privateKey.slice(-35));
+  // Single combined debug log
+  console.log(JSON.stringify({
+    rawLength: rawKey.length,
+    rawStart: rawKey.slice(0, 50),
+    rawEnd: rawKey.slice(-50),
+    hasLiteralSlashN: rawKey.includes('\\n'),
+    hasRealNewline: rawKey.includes('\n'),
+    cleanedLength: privateKey.length,
+    cleanedStart: privateKey.slice(0, 50),
+    cleanedEnd: privateKey.slice(-50),
+    beforeReplaceStart: beforeReplace.slice(0, 50)
+  }, null, 2));
 
   configOptions = {
     credentials: {
@@ -33,7 +37,7 @@ if (process.env.GA_CLIENT_EMAIL && process.env.GA_PRIVATE_KEY) {
     }
   };
 } else {
-  console.log('[Analytics Debug] Client email or private key is missing in Env.');
+  console.log('DEBUG: Client email or private key is missing in Env.');
   configOptions = {
     keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS || 'google-analytics-key.json'
   };

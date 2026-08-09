@@ -14,20 +14,23 @@ if (process.env.GA_CLIENT_EMAIL && process.env.GA_PRIVATE_KEY) {
   if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
     privateKey = privateKey.slice(1, -1);
   }
-  let beforeReplace = privateKey;
-  privateKey = privateKey.replace(/\\n/g, '\n');
+  
+  // Bulletproof replacement of literal backslash+n (handles both \n and \\n)
+  privateKey = privateKey.split('\\n').join('\n');
+  privateKey = privateKey.split('\\\\n').join('\n');
+  // Remove Windows carriage returns
+  privateKey = privateKey.split('\r').join('');
 
   // Single combined debug log
   console.log(JSON.stringify({
     rawLength: rawKey.length,
     rawStart: rawKey.slice(0, 50),
     rawEnd: rawKey.slice(-50),
-    hasLiteralSlashN: rawKey.includes('\\n'),
+    hasLiteralSlashN: rawKey.includes('\\\\n'),
     hasRealNewline: rawKey.includes('\n'),
     cleanedLength: privateKey.length,
     cleanedStart: privateKey.slice(0, 50),
-    cleanedEnd: privateKey.slice(-50),
-    beforeReplaceStart: beforeReplace.slice(0, 50)
+    cleanedEnd: privateKey.slice(-50)
   }, null, 2));
 
   configOptions = {

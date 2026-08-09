@@ -11,8 +11,11 @@ import { sendMail, isMailConfigured } from '../config/mail.js';
 import { BuilderModel } from '../models/BuilderModel.js';
 import { BuilderPattern } from '../models/BuilderPattern.js';
 import { BuilderLogo } from '../models/BuilderLogo.js';
+import { getRealtimeAnalytics } from '../controllers/analyticsController.js';
 
 const router = Router();
+
+router.get('/analytics/realtime', getRealtimeAnalytics);
 
 function normalizeImageUrl(value) {
   if (!value) return '';

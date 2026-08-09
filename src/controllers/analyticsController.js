@@ -6,10 +6,21 @@ const propertyId = process.env.GA_PROPERTY_ID;
 
 let configOptions = {};
 if (process.env.GA_CLIENT_EMAIL && process.env.GA_PRIVATE_KEY) {
+  let privateKey = process.env.GA_PRIVATE_KEY.trim();
+  // Remove surrounding quotes if pasted by mistake
+  if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+    privateKey = privateKey.slice(1, -1);
+  }
+  if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
+    privateKey = privateKey.slice(1, -1);
+  }
+  // Convert literal \n text into actual newline characters
+  privateKey = privateKey.replace(/\\n/g, '\n');
+
   configOptions = {
     credentials: {
-      client_email: process.env.GA_CLIENT_EMAIL,
-      private_key: process.env.GA_PRIVATE_KEY.replace(/\\n/g, '\n')
+      client_email: process.env.GA_CLIENT_EMAIL.trim(),
+      private_key: privateKey
     }
   };
 } else {

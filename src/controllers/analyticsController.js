@@ -7,35 +7,35 @@ const propertyId = process.env.GA_PROPERTY_ID;
 let configOptions = {};
 if (process.env.GA_CLIENT_EMAIL && process.env.GA_PRIVATE_KEY) {
   let rawKey = process.env.GA_PRIVATE_KEY;
-  let privateKey = rawKey.trim();
-  if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-    privateKey = privateKey.slice(1, -1);
+  let clientEmail = process.env.GA_CLIENT_EMAIL.trim();
+
+  // Foolproof PEM key normalizer
+  const header = "-----BEGIN PRIVATE KEY-----";
+  const footer = "-----END PRIVATE KEY-----";
+  
+  let body = rawKey.trim();
+  
+  // Strip headers/footers if present
+  if (body.includes(header)) {
+    body = body.split(header)[1];
   }
-  if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
-    privateKey = privateKey.slice(1, -1);
+  if (body.includes(footer)) {
+    body = body.split(footer)[0];
   }
   
-  // Bulletproof replacement of literal backslash+n (handles both \n and \\n)
-  privateKey = privateKey.split('\\n').join('\n');
-  privateKey = privateKey.split('\\\\n').join('\n');
-  // Remove Windows carriage returns
-  privateKey = privateKey.split('\r').join('');
-
-  // Single combined debug log
-  console.log(JSON.stringify({
-    rawLength: rawKey.length,
-    rawStart: rawKey.slice(0, 50),
-    rawEnd: rawKey.slice(-50),
-    hasLiteralSlashN: rawKey.includes('\\\\n'),
-    hasRealNewline: rawKey.includes('\n'),
-    cleanedLength: privateKey.length,
-    cleanedStart: privateKey.slice(0, 50),
-    cleanedEnd: privateKey.slice(-50)
-  }, null, 2));
+  // Remove all quotes, literal \n, \r, and any whitespace/newlines
+  body = body.replace(/['"]/g, '');
+  body = body.replace(/\\n/g, '');
+  body = body.replace(/\\r/g, '');
+  body = body.replace(/\s+/g, ''); // strips all spaces, tabs, and real newlines
+  
+  // Reconstruct standard PEM format (newlines every 64 characters)
+  const lines = body.match(/.{1,64}/g);
+  const privateKey = `${header}\n${lines.join('\n')}\n${footer}\n`;
 
   configOptions = {
     credentials: {
-      client_email: process.env.GA_CLIENT_EMAIL.trim(),
+      client_email: clientEmail,
       private_key: privateKey
     }
   };

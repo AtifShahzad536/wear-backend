@@ -239,6 +239,7 @@ router.put('/home', upload.none(), async (req, res) => {
   };
   const update = {
     heroImages: parseMaybeJSON(payload.heroImages) || [],
+    categoryImages: parseMaybeJSON(payload.categoryImages) || [],
     testimonials: parseMaybeJSON(payload.testimonials) || [],
     partners: parseMaybeJSON(payload.partners) || [],
     valueProps: parseMaybeJSON(payload.valueProps) || [],

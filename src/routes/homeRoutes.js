@@ -25,6 +25,7 @@ router.get('/settings', async (req, res) => {
     customBuilderEnabled: doc.customBuilderEnabled !== false,
     splashEnabled: doc.splashEnabled !== false,
     heroImages: doc.heroImages || [],
+    categoryImages: doc.categoryImages || [],
     testimonials: doc.testimonials || [],
     partners: doc.partners || [],
     valueProps: doc.valueProps || [],

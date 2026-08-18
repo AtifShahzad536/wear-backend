@@ -16,6 +16,18 @@ const HomeSchema = new mongoose.Schema(
     customBuilderEnabled: { type: Boolean, default: true },
     splashEnabled: { type: Boolean, default: true },
     heroImages: { type: [String], default: [] },
+    categoryImages: {
+      type: [
+        new mongoose.Schema(
+          {
+            slug: { type: String, required: true },
+            image: { type: String, default: '' }
+          },
+          { _id: false }
+        )
+      ],
+      default: []
+    },
     testimonials: { type: [TestimonialSchema], default: [] },
     partners: { type: [String], default: [] },
     valueProps: {

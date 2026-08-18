@@ -1,0 +1,236 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar', { activePage: 'home-images' }) %>
+
+<main class="col-span-12 md:col-span-9 lg:col-span-10 space-y-6">
+  <div class="mb-6 flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">Home Images Settings</h1>
+      <p class="text-slate-500 text-sm mt-1">Manage background images for the Hero Slider and Sports Categories Grid</p>
+    </div>
+  </div>
+
+  <div id="statusAlert" class="hidden bg-emerald-50 text-emerald-700 p-4 rounded-xl border border-emerald-100 items-center gap-3">
+    <i class="bi bi-check-circle-fill"></i>
+    <span id="alertMsg" class="font-medium text-sm">Settings updated successfully!</span>
+  </div>
+
+  <!-- Hero Slider Images Block -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-4">
+    <h2 class="text-lg font-bold text-slate-800 border-b pb-2">Hero Slider Images</h2>
+    <p class="text-xs text-slate-400">Configure background slides for the homepage center product slider. Up to 5 slides supported.</p>
+    
+    <div id="heroList" class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <!-- Generated Dynamically -->
+    </div>
+
+    <div class="flex gap-2 items-center">
+      <input type="file" id="heroUploadInput" class="hidden" accept="image/*" />
+      <button type="button" onclick="document.getElementById('heroUploadInput').click()" class="px-4 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl hover:bg-indigo-100 text-xs font-bold transition">
+        + Upload Slide Image
+      </button>
+    </div>
+  </div>
+
+  <!-- Category Grid Images Block -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-6">
+    <h2 class="text-lg font-bold text-slate-800 border-b pb-2">Sport Category Grid Images</h2>
+    <p class="text-xs text-slate-400">Customize the background hover/card images for each individual sport on the homepage categories grid.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <% 
+        const cats = [
+          { label: 'Football', slug: 'football' },
+          { label: 'Cricket', slug: 'cricket' },
+          { label: 'Basketball', slug: 'basketball' },
+          { label: 'Wrestling', slug: 'wrestling' },
+          { label: 'Softball', slug: 'softball' },
+          { label: 'Soccer', slug: 'soccer' },
+          { label: 'Volleyball', slug: 'volleyball' },
+          { label: 'Ice Hockey', slug: 'ice-hockey' }
+        ];
+        cats.forEach((c) => {
+      %>
+        <div class="rounded-xl border border-slate-200/80 p-4 space-y-3 bg-slate-50/50">
+          <div class="flex justify-between items-center border-b pb-2">
+            <span class="font-bold text-sm text-slate-800"><%= c.label %></span>
+            <span class="text-[10px] font-semibold text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full"><%= c.slug %></span>
+          </div>
+          
+          <div class="flex gap-2">
+            <input type="text" id="cat-input-<%= c.slug %>" class="border rounded-xl px-3 py-2 flex-1 text-xs" placeholder="Image URL (/uploads/... or https://...)" />
+            <input type="file" id="cat-file-<%= c.slug %>" class="hidden" accept="image/*" onchange="uploadCategoryFile('<%= c.slug %>')" />
+            <button type="button" onclick="document.getElementById('cat-file-<%= c.slug %>').click()" class="px-3 py-2 border rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-50 transition border-slate-200">
+              Upload
+            </button>
+          </div>
+
+          <div class="h-28 rounded-xl border border-slate-200/80 overflow-hidden bg-slate-100 relative">
+            <img id="cat-preview-<%= c.slug %>" src="" class="w-full h-full object-cover hidden" />
+            <div id="cat-fallback-<%= c.slug %>" class="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">No custom image set</div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Global Save Button -->
+  <div class="flex justify-end pt-4">
+    <button type="button" onclick="saveAllImages()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md transition">
+      Save All Changes
+    </button>
+  </div>
+</main>
+
+<script>
+  let localHeroImages = [];
+  const slugs = ['football', 'cricket', 'basketball', 'wrestling', 'softball', 'soccer', 'volleyball', 'ice-hockey'];
+
+  async function loadHomeSettings() {
+    try {
+      const res = await fetch('/api/admin/home');
+      const data = await res.json();
+      
+      localHeroImages = data.heroImages || [];
+      renderHeroList();
+
+      const catImages = data.categoryImages || [];
+      slugs.forEach(slug => {
+        const found = catImages.find(c => c.slug === slug);
+        const input = document.getElementById(`cat-input-${slug}`);
+        const preview = document.getElementById(`cat-preview-${slug}`);
+        const fallback = document.getElementById(`cat-fallback-${slug}`);
+
+        if (found && found.image) {
+          input.value = found.image;
+          preview.src = found.image;
+          preview.classList.remove('hidden');
+          fallback.classList.add('hidden');
+        } else {
+          input.value = '';
+          preview.src = '';
+          preview.classList.add('hidden');
+          fallback.classList.remove('hidden');
+        }
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function renderHeroList() {
+    const list = document.getElementById('heroList');
+    list.innerHTML = '';
+    
+    localHeroImages.forEach((img, index) => {
+      const card = `
+        <div class="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-sm relative group">
+          <img src="${img}" class="w-full h-24 object-cover" />
+          <button type="button" onclick="removeHero(${index})" class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white text-[10px] py-1 px-2 rounded-lg font-bold transition opacity-90 hover:opacity-100">
+            Delete
+          </button>
+        </div>
+      `;
+      list.insertAdjacentHTML('beforeend', card);
+    });
+  }
+
+  function removeHero(idx) {
+    localHeroImages.splice(idx, 1);
+    renderHeroList();
+  }
+
+  // Hero File uploads
+  document.getElementById('heroUploadInput').addEventListener('change', async (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const form = new FormData();
+    form.append('file', f);
+    try {
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: form });
+      const data = await res.json();
+      if (data.url) {
+        localHeroImages.push(data.url);
+        renderHeroList();
+        showNotification('Hero slide image uploaded successfully!');
+      }
+    } catch (err) {
+      alert('Upload failed');
+    }
+    e.target.value = '';
+  });
+
+  // Category File uploads
+  async function uploadCategoryFile(slug) {
+    const fileEl = document.getElementById(`cat-file-${slug}`);
+    const f = fileEl.files?.[0]; if (!f) return;
+    const form = new FormData();
+    form.append('file', f);
+    try {
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: form });
+      const data = await res.json();
+      if (data.url) {
+        const input = document.getElementById(`cat-input-${slug}`);
+        const preview = document.getElementById(`cat-preview-${slug}`);
+        const fallback = document.getElementById(`cat-fallback-${slug}`);
+
+        input.value = data.url;
+        preview.src = data.url;
+        preview.classList.remove('hidden');
+        fallback.classList.add('hidden');
+        showNotification(`${slug} category image uploaded!`);
+      }
+    } catch (err) {
+      alert('Upload failed');
+    }
+    fileEl.value = '';
+  }
+
+  async function saveAllImages() {
+    // Collect Category Images
+    const categoryImages = slugs.map(slug => {
+      const imageVal = document.getElementById(`cat-input-${slug}`).value.trim();
+      return { slug, image: imageVal };
+    }).filter(c => c.image !== '');
+
+    const payload = {
+      heroImages: localHeroImages,
+      categoryImages
+    };
+
+    try {
+      const res = await fetch('/api/admin/home', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const alert = document.getElementById('statusAlert');
+        alert.classList.remove('hidden');
+        alert.classList.add('flex');
+        window.scrollTo(0, 0);
+        setTimeout(() => {
+          alert.classList.remove('flex');
+          alert.classList.add('hidden');
+        }, 3000);
+      }
+    } catch (err) {
+      alert('Failed to save settings');
+    }
+  }
+
+  function showNotification(msg) {
+    const alert = document.getElementById('statusAlert');
+    const msgSpan = document.getElementById('alertMsg');
+    msgSpan.innerText = msg;
+    alert.classList.remove('hidden');
+    alert.classList.add('flex');
+    setTimeout(() => {
+      alert.classList.remove('flex');
+      alert.classList.add('hidden');
+      msgSpan.innerText = 'Settings updated successfully!';
+    }, 3000);
+  }
+
+  loadHomeSettings();
+</script>
+
+<%- include('partials/footer') %>

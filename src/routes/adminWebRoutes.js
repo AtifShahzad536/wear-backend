@@ -207,6 +207,12 @@ router.get('/builder-logos/:id/edit', async (req, res) => {
   res.render('builder_logos/edit', { title: `Edit Logo • ${logo.name}`, logo });
 });
 
+// Home Images CRUD
+router.get('/home-images', async (req, res) => {
+  const success = req.query.success === 'true';
+  res.render('home_images', { title: 'Home Images Settings', success, activePage: 'home-images' });
+});
+
 // Home Videos CRUD
 router.get('/home-videos', async (req, res) => {
   let doc = await HomeSettings.findOne({ key: 'default' });

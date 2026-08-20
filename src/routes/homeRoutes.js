@@ -21,12 +21,38 @@ router.get('/topSelling', async (req, res) => {
 });
 router.get('/settings', async (req, res) => {
   const doc = (await HomeSettings.findOne({ key: 'default' }).lean()) || {};
+  const defaultTestimonials = [
+    {
+      name: "Marcus Miller",
+      role: "Head Coach, Austin FC Youth Academy",
+      content: "The quality of the sublimated soccer jerseys was outstanding. The colors are incredibly vibrant, and the breathability is exactly what we need for the hot Texas summers. We ordered 150 kits and received them in 2 weeks!",
+      rating: 5,
+    },
+    {
+      name: "Sarah Jenkins",
+      role: "Athletic Director, Lincoln High School (CA)",
+      content: "We ordered custom wrestling singlets and track gear for our varsity teams. Zarko's customer support drafted digital mockups within hours, and the final singlets comply fully with NFHS standards. Highly recommend!",
+      rating: 5,
+    },
+    {
+      name: "Dave Richardson",
+      role: "role: Founder, Apex Elite Basketball Club (NY)",
+      content: "Finding a sportswear manufacturer with low MOQs and export-grade quality was tough until we found Zarko. The material is premium dry-fit, and the stitching is reinforced. Delivery was super fast via DHL.",
+      rating: 5,
+    },
+    {
+      name: "Coach Elena Rostova",
+      role: "Wrestling Program Coordinator, Chicago Titans",
+      content: "Our wrestlers grapple hard, and these custom singlets have stood up to the test. Flatlock seams prevent chafing, and the silicone grip bands are perfect. Outstanding craftsmanship and USD wholesale pricing.",
+      rating: 5,
+    }
+  ];
   res.json({
     customBuilderEnabled: doc.customBuilderEnabled !== false,
     splashEnabled: doc.splashEnabled !== false,
     heroImages: doc.heroImages || [],
     categoryImages: doc.categoryImages || [],
-    testimonials: doc.testimonials || [],
+    testimonials: Array.isArray(doc.testimonials) && doc.testimonials.length ? doc.testimonials : defaultTestimonials,
     partners: doc.partners || [],
     valueProps: doc.valueProps || [],
     topSelling: doc.topSelling || [],

@@ -9,24 +9,60 @@ import {
   adminDeleteHomeProduct,
 } from '../controllers/homeController.js';
 import { HomeSettings } from '../models/Home.js';
+import { Category } from '../models/Category.js';
 
 const router = Router();
 
-const defaultTopSelling = [
-  { name: 'Pro Football Jersey', image: '/uploads/slide1.jpg', link: '/football' },
-  { name: 'Cricket ODI Kit', image: '/uploads/slide2.jpg', link: '/cricket' },
-  { name: 'Basketball Sleeveless Set', image: '/uploads/slide1.jpg', link: '/basketball' },
-  { name: 'Hockey Team Jersey', image: '/uploads/slide2.jpg', link: '/hockey' },
-  { name: 'Rugby Pro Shorts', image: '/uploads/slide1.jpg', link: '/rugby' },
-  { name: 'Tennis Performance Polo', image: '/uploads/slide2.jpg', link: '/tennis' },
-];
+const getDynamicTopSelling = async () => {
+  try {
+    const cats = await Category.find({}).lean();
+    const prods = [];
+    cats.forEach(c => {
+      // Pick first regular product if it exists
+      if (Array.isArray(c.products) && c.products.length > 0 && c.products[0].name) {
+        prods.push({
+          name: c.products[0].name,
+          image: c.products[0].image || '/uploads/placeholder.jpg',
+          link: `/${c.slug}`
+        });
+      }
+      // Pick featured product if no regular products
+      else if (c.featured && c.featured.name) {
+        prods.push({
+          name: c.featured.name,
+          image: c.featured.image || '/uploads/placeholder.jpg',
+          link: `/${c.slug}`
+        });
+      }
+    });
+    
+    if (prods.length === 0) {
+      return [
+        { name: 'Pro Football Jersey', image: '/uploads/slide1.jpg', link: '/football' },
+        { name: 'Cricket ODI Kit', image: '/uploads/slide2.jpg', link: '/cricket' },
+        { name: 'Basketball Sleeveless Set', image: '/uploads/slide1.jpg', link: '/basketball' },
+        { name: 'Hockey Team Jersey', image: '/uploads/slide2.jpg', link: '/hockey' },
+        { name: 'Rugby Pro Shorts', image: '/uploads/slide1.jpg', link: '/rugby' },
+        { name: 'Tennis Performance Polo', image: '/uploads/slide2.jpg', link: '/tennis' },
+      ];
+    }
+    
+    return prods.slice(0, 8);
+  } catch (err) {
+    console.error('Error fetching dynamic top selling products:', err);
+    return [];
+  }
+};
 
 // Public
 router.get('/', getHome);
 router.get('/products/:id', getHomeProduct);
 router.get('/topSelling', async (req, res) => {
   const doc = (await HomeSettings.findOne({ key: 'default' }).lean()) || {};
-  const topSelling = Array.isArray(doc.topSelling) && doc.topSelling.length ? doc.topSelling : defaultTopSelling;
+  let topSelling = Array.isArray(doc.topSelling) && doc.topSelling.length ? doc.topSelling : [];
+  if (topSelling.length === 0) {
+    topSelling = await getDynamicTopSelling();
+  }
   res.json({ topSelling });
 });
 router.get('/settings', async (req, res) => {
@@ -57,6 +93,12 @@ router.get('/settings', async (req, res) => {
       rating: 5,
     }
   ];
+
+  let topSelling = Array.isArray(doc.topSelling) && doc.topSelling.length ? doc.topSelling : [];
+  if (topSelling.length === 0) {
+    topSelling = await getDynamicTopSelling();
+  }
+
   res.json({
     customBuilderEnabled: doc.customBuilderEnabled !== false,
     splashEnabled: doc.splashEnabled !== false,
@@ -65,7 +107,7 @@ router.get('/settings', async (req, res) => {
     testimonials: Array.isArray(doc.testimonials) && doc.testimonials.length ? doc.testimonials : defaultTestimonials,
     partners: doc.partners || [],
     valueProps: doc.valueProps || [],
-    topSelling: Array.isArray(doc.topSelling) && doc.topSelling.length ? doc.topSelling : defaultTopSelling,
+    topSelling,
     videos: doc.videos || [],
   });
 });

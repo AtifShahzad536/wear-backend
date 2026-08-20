@@ -12,12 +12,22 @@ import { HomeSettings } from '../models/Home.js';
 
 const router = Router();
 
+const defaultTopSelling = [
+  { name: 'Pro Football Jersey', image: '/uploads/slide1.jpg', link: '/football' },
+  { name: 'Cricket ODI Kit', image: '/uploads/slide2.jpg', link: '/cricket' },
+  { name: 'Basketball Sleeveless Set', image: '/uploads/slide1.jpg', link: '/basketball' },
+  { name: 'Hockey Team Jersey', image: '/uploads/slide2.jpg', link: '/hockey' },
+  { name: 'Rugby Pro Shorts', image: '/uploads/slide1.jpg', link: '/rugby' },
+  { name: 'Tennis Performance Polo', image: '/uploads/slide2.jpg', link: '/tennis' },
+];
+
 // Public
 router.get('/', getHome);
 router.get('/products/:id', getHomeProduct);
 router.get('/topSelling', async (req, res) => {
   const doc = (await HomeSettings.findOne({ key: 'default' }).lean()) || {};
-  res.json({ topSelling: doc.topSelling || [] });
+  const topSelling = Array.isArray(doc.topSelling) && doc.topSelling.length ? doc.topSelling : defaultTopSelling;
+  res.json({ topSelling });
 });
 router.get('/settings', async (req, res) => {
   const doc = (await HomeSettings.findOne({ key: 'default' }).lean()) || {};
@@ -55,7 +65,7 @@ router.get('/settings', async (req, res) => {
     testimonials: Array.isArray(doc.testimonials) && doc.testimonials.length ? doc.testimonials : defaultTestimonials,
     partners: doc.partners || [],
     valueProps: doc.valueProps || [],
-    topSelling: doc.topSelling || [],
+    topSelling: Array.isArray(doc.topSelling) && doc.topSelling.length ? doc.topSelling : defaultTopSelling,
     videos: doc.videos || [],
   });
 });

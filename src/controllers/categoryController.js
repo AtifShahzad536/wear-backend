@@ -2,7 +2,7 @@ import { Category } from '../models/Category.js';
 import { HomeSettings } from '../models/Home.js';
 
 export const listCategories = async (req, res) => {
-  const list = await Category.find({}, { slug: 1, name: 1, _id: 0 }).lean();
+  const list = await Category.find({}, { slug: 1, name: 1, featured: 1, products: 1, _id: 0 }).lean();
   res.json(list);
 };
 

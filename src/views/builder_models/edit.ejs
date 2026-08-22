@@ -62,6 +62,32 @@
             </div>
           </div>
 
+          <!-- UV View & Flat View -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">UV View Image URL <span class="text-xs font-normal text-gray-400">(texture layout diagram)</span></label>
+              <div class="flex gap-2">
+                <input type="text" id="uv_view" name="uv_view" value="<%= model.uv_view || '' %>" placeholder="https://... or /uploads/..." class="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <button type="button" onclick="triggerUpload('uv_view', 'image/*')" class="px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold uppercase transition">Upload</button>
+              </div>
+              <% if (model.uv_view) { %>
+                <div class="mt-2"><img src="<%= model.uv_view %>" alt="UV View Preview" class="h-20 rounded-lg border border-gray-200 object-contain bg-gray-50" /></div>
+              <% } %>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Flat View Image URL <span class="text-xs font-normal text-gray-400">(2D front/back diagram)</span></label>
+              <div class="flex gap-2">
+                <input type="text" id="flat_view" name="flat_view" value="<%= model.flat_view || '' %>" placeholder="https://... or /uploads/..." class="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <button type="button" onclick="triggerUpload('flat_view', 'image/*')" class="px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold uppercase transition">Upload</button>
+              </div>
+              <% if (model.flat_view) { %>
+                <div class="mt-2"><img src="<%= model.flat_view %>" alt="Flat View Preview" class="h-20 rounded-lg border border-gray-200 object-contain bg-gray-50" /></div>
+              <% } %>
+            </div>
+          </div>
+
+
           <!-- Dynamic Layers Panel (Laravel Style) -->
           <div id="layers-config-section" class="border border-slate-200 rounded-2xl p-5 bg-slate-50 space-y-4">
             <div class="border-b pb-2 flex items-center justify-between">

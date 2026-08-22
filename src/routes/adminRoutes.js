@@ -294,7 +294,7 @@ router.get('/builder-models', async (req, res) => {
 
 router.post('/builder-models', upload.none(), async (req, res) => {
   try {
-    const { category_id, name, model_url, thumbnail, mapping, layers_metadata, status } = req.body;
+    const { category_id, name, model_url, thumbnail, uv_view, flat_view, mapping, layers_metadata, status } = req.body;
     if (!category_id || !name || !model_url) {
       return res.status(400).json({ error: 'category_id, name, and model_url are required' });
     }
@@ -310,6 +310,8 @@ router.post('/builder-models', upload.none(), async (req, res) => {
       name,
       model_url: normalizeImageUrl(model_url),
       thumbnail: normalizeImageUrl(thumbnail),
+      uv_view: normalizeImageUrl(uv_view),
+      flat_view: normalizeImageUrl(flat_view),
       mapping: parseJSON(mapping),
       layers_metadata: parseJSON(layers_metadata),
       status: status === 'false' ? false : true
@@ -332,6 +334,8 @@ router.put('/builder-models/:id', upload.none(), async (req, res) => {
     };
     if (updates.model_url) updates.model_url = normalizeImageUrl(updates.model_url);
     if (updates.thumbnail) updates.thumbnail = normalizeImageUrl(updates.thumbnail);
+    if (updates.uv_view !== undefined) updates.uv_view = normalizeImageUrl(updates.uv_view);
+    if (updates.flat_view !== undefined) updates.flat_view = normalizeImageUrl(updates.flat_view);
     if (updates.mapping) updates.mapping = parseJSON(updates.mapping);
     if (updates.layers_metadata) updates.layers_metadata = parseJSON(updates.layers_metadata);
     if (updates.status !== undefined) updates.status = updates.status === 'false' ? false : true;
@@ -348,6 +352,8 @@ router.put('/builder-models/:id', upload.none(), async (req, res) => {
 router.post('/builder-models/:id', upload.none(), async (req, res) => {
   try {
     const updates = { ...req.body };
+    if (updates.uv_view !== undefined) updates.uv_view = normalizeImageUrl(updates.uv_view);
+    if (updates.flat_view !== undefined) updates.flat_view = normalizeImageUrl(updates.flat_view);
     const parseJSON = (v) => {
       if (!v) return {};
       if (typeof v === 'string') {

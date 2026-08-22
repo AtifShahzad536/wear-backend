@@ -31,6 +31,8 @@ router.get('/config', async (req, res) => {
       name: (model.name || '').toUpperCase(),
       modelUrl: model.model_url,
       thumbnail: model.thumbnail,
+      uvView: model.uv_view || '',
+      flatView: model.flat_view || '',
       mapping: model.mapping && Object.keys(model.mapping).length > 0 ? model.mapping : defaultMapping,
       layers_metadata: model.layers_metadata || {},
     }));

@@ -14,9 +14,9 @@ router.post('/customize', async (req, res) => {
 
     const apiKey = config.geminiApiKey;
     if (!apiKey) {
-      return res.status(429).json({ 
+      return res.status(429).json({
         error: 'quota_exceeded',
-        details: 'Gemini API key is missing. Please add GEMINI_API_KEY to your .env file.' 
+        details: 'Gemini API key is missing. Please add GEMINI_API_KEY to your .env file.'
       });
     }
 
@@ -25,7 +25,7 @@ router.post('/customize', async (req, res) => {
     }
 
     // Build the request body for Gemini API (Structured JSON output)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`;
 
     const systemInstruction = `You are a professional sportswear designer. Your task is to customize a 3D sports jersey/outfit model based on the user's design command.
 You must return a JSON object with the exact updates to apply to the model's meshes AND the decals list.
@@ -229,17 +229,17 @@ Provide your design response strictly following the JSON format.`;
       let errJson;
       try {
         errJson = JSON.parse(errText);
-      } catch (e) {}
+      } catch (e) { }
 
       const errMessage = errJson?.error?.message || errText || '';
-      const isQuota = response.status === 429 || 
-                      response.status === 403 || 
-                      errMessage.toLowerCase().includes('quota') || 
-                      errMessage.toLowerCase().includes('limit') || 
-                      errMessage.toLowerCase().includes('exhausted') || 
-                      errMessage.toLowerCase().includes('billing') || 
-                      errMessage.toLowerCase().includes('credit') || 
-                      errMessage.toLowerCase().includes('reach');
+      const isQuota = response.status === 429 ||
+        response.status === 403 ||
+        errMessage.toLowerCase().includes('quota') ||
+        errMessage.toLowerCase().includes('limit') ||
+        errMessage.toLowerCase().includes('exhausted') ||
+        errMessage.toLowerCase().includes('billing') ||
+        errMessage.toLowerCase().includes('credit') ||
+        errMessage.toLowerCase().includes('reach');
 
       throw {
         status: isQuota ? 429 : 500,
@@ -277,9 +277,9 @@ Provide your design response strictly following the JSON format.`;
         details: error.details
       });
     } else {
-      res.status(500).json({ 
-        error: 'Failed to generate customization.', 
-        details: error.message 
+      res.status(500).json({
+        error: 'Failed to generate customization.',
+        details: error.message
       });
     }
   }

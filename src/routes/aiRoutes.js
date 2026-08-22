@@ -25,7 +25,7 @@ router.post('/customize', async (req, res) => {
     }
 
     // Build the request body for Gemini API (Structured JSON output)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 
     const systemInstruction = `You are a professional sportswear designer. Your task is to customize a 3D sports jersey/outfit model based on the user's design command.
 You must return a JSON object with the exact updates to apply to the model's meshes AND the decals list.
